@@ -199,17 +199,34 @@ function mousePressed() {
 
 // Evento para pantalla táctil en móviles
 function touchStarted() {
-  // Solo agregar partícula si la opción está habilitada
-  if (UI.shouldAddParticleOnClick() && touches.length > 0) {
-    for (let touch of touches) {
-      if (touch.x > 0 && touch.y > 0 && touch.x < width && touch.y < height) {
-        ParticleSystem.agregarParticula(touch.x, touch.y);
+  // Verificar si el toque ocurrió en un botón o control interactivo
+  // para evitar añadir partículas cuando interactuamos con la interfaz
+  if (
+    touches.length > 0 && 
+    !touches[0].target.closest('#controles') && 
+    !touches[0].target.closest('#action-buttons') && 
+    !touches[0].target.closest('#help-popup') && 
+    !touches[0].target.closest('#help-toggle') && 
+    !touches[0].target.closest('#welcome-popup')
+  ) {
+    // Solo agregar partícula si la opción está habilitada
+    if (UI.shouldAddParticleOnClick()) {
+      for (let touch of touches) {
+        if (touch.x > 0 && touch.y > 0 && touch.x < width && touch.y < height) {
+          ParticleSystem.agregarParticula(touch.x, touch.y);
+        }
       }
     }
   }
   
-  // Para evitar comportamientos indeseados en móvil
-  return false;
+  // Importante: No prevenir comportamiento por defecto a menos que sea en el canvas
+  if (touches.length > 0 && touches[0].target.nodeName.toLowerCase() === 'canvas') {
+    // Solo para el canvas prevenimos el comportamiento por defecto
+    return false;
+  }
+  
+  // Para otros elementos (UI), permitimos el comportamiento por defecto
+  return true;
 }
 
 // Ajustar el tamaño del canvas cuando cambia el tamaño de la ventana

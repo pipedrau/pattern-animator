@@ -1,5 +1,31 @@
 /* mobile.css - Estilos responsivos para Pattern Animator */
 
+/* Estilos generales para dispositivos táctiles */
+.touch-device button, 
+.touch-device .action-button, 
+.touch-device input[type="checkbox"],
+.touch-device .collapsible-header {
+  cursor: pointer;
+  -webkit-tap-highlight-color: rgba(0,0,0,0);
+  -webkit-touch-callout: none;
+}
+
+/* Estilo de botones al tocarlos */
+.action-button.touch-active {
+  transform: scale(0.95);
+  background-color: #5e72e4;
+  color: white;
+}
+
+/* Estilos para botones y controles en dispositivos táctiles */
+.touch-device .collapsible-header:active {
+  background-color: rgba(72, 72, 99, 0.7);
+}
+
+.touch-device button:active {
+  transform: scale(0.97);
+}
+
 /* Estilos para tabletas (iPad y similares) */
 @media screen and (max-width: 1024px) {
   /* Panel de control ajustado */
@@ -52,6 +78,8 @@
     max-height: 85vh;
     left: -100%; /* Oculto por defecto */
     top: 5px;
+    overflow-y: scroll; /* Asegurar que el scroll funcione */
+    -webkit-overflow-scrolling: touch; /* Scroll suave en iOS */
   }
   
   #controles.visible {
@@ -77,6 +105,17 @@
     height: 56px;
     margin: 0 10px;
     margin-bottom: 0;
+  }
+  
+  /* Zona de toque aumentada para botones de acción */
+  .action-button::after {
+    content: '';
+    position: absolute;
+    top: -10px;
+    bottom: -10px;
+    left: -10px;
+    right: -10px;
+    z-index: -1;
   }
   
   /* Ajustar popup de bienvenida */

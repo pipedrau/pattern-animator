@@ -551,28 +551,32 @@ const UI = {
   toggleVisibilidad() {
     Config.controlVisible = !Config.controlVisible;
     let controles = select('#controles');
+    
     if (controles) {
-      if (Config.controlVisible) {
-        controles.style('display', 'block');
-        
-        // Para dispositivos móviles, añadir clase additional
-        if (typeof DeviceDetector !== 'undefined' && DeviceDetector.isMobile) {
-          // Esperar un frame para que se aplique el display: block
+      if (typeof DeviceDetector !== 'undefined' && DeviceDetector.isMobile) {
+        // En dispositivos móviles usamos clases CSS para transiciones suaves
+        if (Config.controlVisible) {
+          // Primero mostrar el elemento
+          controles.style('display', 'block');
+          
+          // Luego aplicar la clase para la animación (en el siguiente frame)
           setTimeout(() => {
             controles.elt.classList.add('visible');
           }, 10);
-        }
-      } else {
-        // Para dispositivos móviles, primero quitar la clase
-        if (typeof DeviceDetector !== 'undefined' && DeviceDetector.isMobile) {
+        } else {
+          // Primero quitar la clase para iniciar la animación
           controles.elt.classList.remove('visible');
+          
           // Esperar a que termine la transición para ocultar
           setTimeout(() => {
-            controles.style('display', 'none');
-          }, 300);
-        } else {
-          controles.style('display', 'none');
+            if (!Config.controlVisible) { // Verificar que no haya cambiado mientras tanto
+              controles.style('display', 'none');
+            }
+          }, 300); // Tiempo igual a la duración de la transición CSS
         }
+      } else {
+        // En escritorio, simplemente cambiar display
+        controles.style('display', Config.controlVisible ? 'block' : 'none');
       }
       
       // Actualizar botón de menú
