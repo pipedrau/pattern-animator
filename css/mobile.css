@@ -1,5 +1,31 @@
 /* mobile.css - Estilos responsivos para Pattern Animator */
 
+/* Estilos para tooltips móviles */
+.mobile-tooltip {
+  position: fixed;
+  background-color: rgba(30, 39, 46, 0.9);
+  color: white;
+  padding: 10px 15px;
+  border-radius: 5px;
+  z-index: 1000;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+  max-width: 200px;
+  text-align: center;
+  font-size: 14px;
+  transition: opacity 0.3s;
+}
+
+.mobile-tooltip::before {
+  content: '';
+  position: absolute;
+  top: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  border-width: 0 8px 8px 8px;
+  border-style: solid;
+  border-color: transparent transparent rgba(30, 39, 46, 0.9) transparent;
+}
+
 /* Estilos generales para dispositivos táctiles */
 .touch-device button, 
 .touch-device .action-button, 
@@ -26,23 +52,50 @@
   transform: scale(0.97);
 }
 
+/* Ocultar popup de ayuda en dispositivos táctiles */
+.touch-device #help-toggle {
+  display: none;
+}
+
+.touch-device #help-popup {
+  display: none;
+}
+
 /* Estilos para tabletas (iPad y similares) */
 @media screen and (max-width: 1024px) {
   /* Panel de control ajustado */
   #controles {
-    width: 280px;
-    max-height: 90vh;
-    left: -290px; /* Oculto por defecto */
-    transition: left 0.3s ease;
+    position: fixed;
+    width: 80%;
+    max-width: 450px;
+    height: auto;
+    max-height: 80vh;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    border-radius: 12px;
+    box-shadow: 0 0 20px rgba(0,
+    0, 0, 0.5);
+    display: none;
+    z-index: 950;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
   
-  #controles.visible {
-    left: 10px;
+  /* Fondo para el panel cuando está visible */
+  .modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 900;
+    display: none;
   }
   
-  /* Hacer que el panel se muestre inicialmente oculto */
-  body.mobile-view #controles {
-    left: -290px;
+  .modal-backdrop.visible {
+    display: block;
   }
   
   /* Aumentar tamaño de botones para mejor interacción táctil */
@@ -73,17 +126,12 @@
 @media screen and (max-width: 768px) {
   /* Panel de control más ancho para móviles */
   #controles {
-    width: 85%;
-    max-width: 360px;
-    max-height: 85vh;
-    left: -100%; /* Oculto por defecto */
-    top: 5px;
-    overflow-y: scroll; /* Asegurar que el scroll funcione */
-    -webkit-overflow-scrolling: touch; /* Scroll suave en iOS */
-  }
-  
-  #controles.visible {
-    left: 5px;
+    width: 90%;
+    max-width: 350px;
+    max-height: 75vh;
+    padding: 15px;
+    overflow-y: scroll;
+    -webkit-overflow-scrolling: touch;
   }
   
   /* Mover botones de acción a la parte inferior (estilo dock) */
@@ -128,25 +176,30 @@
     max-height: 60vh;
   }
   
-  /* Popup de ayuda */
+  /* Popup de ayuda - oculto en móviles */
   #help-popup {
-    top: auto;
-    bottom: 80px;
-    left: 5px;
-    right: 5px;
-    max-width: none;
-    width: auto;
-    transform: translateY(110%);
-  }
-  
-  #help-popup.visible {
-    transform: translateY(0);
+    display: none;
   }
   
   #help-toggle {
-    top: auto;
-    bottom: 85px;
+    display: none;
+  }
+  
+  /* Añadir botón de cerrar para el panel de control */
+  .mobile-close-button {
+    position: absolute;
+    top: 10px;
     right: 10px;
+    width: 30px;
+    height: 30px;
+    background-color: rgba(0, 0, 0, 0.3);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    cursor: pointer;
+    z-index: 2;
   }
   
   /* Inputs y controles más grandes para dedos */

@@ -42,6 +42,9 @@ const DeviceDetector = {
         // Ajustar número de partículas para mejor rendimiento
         Config.cantidadParticulas = Math.min(Config.cantidadParticulas, 150);
       }
+      
+      // Ocultar el popup de ayuda que no es relevante en dispositivos móviles
+      this._ocultarAyudaTeclado();
     }
     
     // Registrar eventos táctiles adecuados
@@ -71,6 +74,96 @@ const DeviceDetector = {
     
     // Reiniciar p5.js para aceptar correctamente eventos táctiles
     this._reiniciarP5TouchListeners();
+  },
+  
+  /**
+   * Oculta el popup de ayuda de teclado en dispositivos móviles
+   */
+  _ocultarAyudaTeclado() {
+    // Reemplazar los atajos de teclado con consejos para móviles
+    const helpPopup = document.getElementById('help-popup');
+    const helpToggle = document.getElementById('help-toggle');
+    
+    if (helpPopup) {
+      // Ocultar en móviles
+      helpPopup.style.display = 'none';
+    }
+    
+    if (helpToggle) {
+      helpToggle.style.display = 'none';
+    }
+    
+    // Crear tooltips para guiar en dispositivos móviles
+    setTimeout(() => {
+      if (this.isMobile && !sessionStorage.getItem('mobile-tips-shown')) {
+        this._mostrarConsejosMobile();
+        sessionStorage.setItem('mobile-tips-shown', 'true');
+      }
+    }, 2000);
+  },
+  
+  /**
+   * Muestra consejos para usuarios de dispositivos móviles
+   */
+  _mostrarConsejosMobile() {
+    const tips = [
+      {
+        mensaje: "Toca el menú para acceder a los controles",
+        target: '.action-button[title*="Controles"]',
+        tiempo: 3000
+      },
+      {
+        mensaje: "Toca aquí para añadir partículas",
+        target: 'canvas',
+        tiempo: 3000
+      }
+    ];
+    
+    let delay = 500;
+    tips.forEach(tip => {
+      setTimeout(() => {
+        this._crearTooltip(tip.mensaje, tip.target, tip.tiempo);
+      }, delay);
+      delay += tip.tiempo + 500;
+    });
+  },
+  
+  /**
+   * Crea un tooltip temporal
+   */
+  _crearTooltip(mensaje, targetSelector, duracion = 3000) {
+    const target = document.querySelector(targetSelector);
+    if (!target) return;
+    
+    const tooltip = document.createElement('div');
+    tooltip.className = 'mobile-tooltip';
+    tooltip.textContent = mensaje;
+    tooltip.style.position = 'fixed';
+    tooltip.style.backgroundColor = 'rgba(30, 39, 46, 0.9)';
+    tooltip.style.color = 'white';
+    tooltip.style.padding = '10px 15px';
+    tooltip.style.borderRadius = '5px';
+    tooltip.style.zIndex = '1000';
+    tooltip.style.boxShadow = '0 2px 10px rgba(0,0,0,0.2)';
+    tooltip.style.maxWidth = '200px';
+    tooltip.style.textAlign = 'center';
+    tooltip.style.fontSize = '14px';
+    tooltip.style.transition = 'opacity 0.3s';
+    
+    // Posicionar cerca del elemento objetivo
+    const rect = target.getBoundingClientRect();
+    tooltip.style.top = `${rect.bottom + 10}px`;
+    tooltip.style.left = `${rect.left + rect.width/2}px`;
+    tooltip.style.transform = 'translateX(-50%)';
+    
+    // Añadir al body y mostrar temporalmente
+    document.body.appendChild(tooltip);
+    
+    // Animación de entrada y salida
+    setTimeout(() => {
+      tooltip.style.opacity = '0';
+      setTimeout(() => tooltip.remove(), 300);
+    }, duracion);
   },
   
   /**

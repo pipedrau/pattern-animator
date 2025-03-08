@@ -29,6 +29,21 @@ const UI = {
     
     console.log("Panel de control creado");
     
+    // Para dispositivos móviles, añadir botón de cierre
+    if (typeof DeviceDetector !== 'undefined' && DeviceDetector.isMobile) {
+      const closeButton = createDiv();
+      closeButton.class('mobile-close-button');
+      closeButton.parent(this.controlPanel);
+      
+      const closeIcon = createSpan('close');
+      closeIcon.class('material-icons');
+      closeIcon.parent(closeButton);
+      
+      closeButton.mousePressed(() => {
+        this.toggleVisibilidad();
+      });
+    }
+    
     // Inicializar las secciones plegables después de crear el DOM
     this._inicializarSeccionesPlegables();
   },
@@ -551,42 +566,51 @@ const UI = {
   toggleVisibilidad() {
     Config.controlVisible = !Config.controlVisible;
     let controles = select('#controles');
+    const backdrop = document.getElementById('modal-backdrop');
     
-    if (controles) {
-      if (typeof DeviceDetector !== 'undefined' && DeviceDetector.isMobile) {
-        // En dispositivos móviles usamos clases CSS para transiciones suaves
-        if (Config.controlVisible) {
-          // Primero mostrar el elemento
+    if (typeof DeviceDetector !== 'undefined' && DeviceDetector.isMobile) {
+      // Enfoque modal para dispositivos móviles
+      if (Config.controlVisible) {
+        // Mostrar el fondo modal primero
+        if (backdrop) backdrop.classList.add('visible');
+        
+        // Luego mostrar el panel
+        if (controles) {
           controles.style('display', 'block');
-          
-          // Luego aplicar la clase para la animación (en el siguiente frame)
-          setTimeout(() => {
-            controles.elt.classList.add('visible');
-          }, 10);
-        } else {
-          // Primero quitar la clase para iniciar la animación
-          controles.elt.classList.remove('visible');
-          
-          // Esperar a que termine la transición para ocultar
-          setTimeout(() => {
-            if (!Config.controlVisible) { // Verificar que no haya cambiado mientras tanto
-              controles.style('display', 'none');
-            }
-          }, 300); // Tiempo igual a la duración de la transición CSS
+        }
+        
+        // Registrar evento de cierre al tocar fuera
+        if (backdrop) {
+          backdrop.onclick = () => {
+            this.toggleVisibilidad();
+          };
         }
       } else {
-        // En escritorio, simplemente cambiar display
+        // Ocultar panel
+        if (controles) {
+          controles.style('display', 'none');
+        }
+        
+        // Ocultar backdrop
+        if (backdrop) {
+          backdrop.classList.remove('visible');
+          backdrop.onclick = null;
+        }
+      }
+    } else {
+      // Comportamiento original para escritorio
+      if (controles) {
         controles.style('display', Config.controlVisible ? 'block' : 'none');
       }
-      
-      // Actualizar botón de menú
-      const menuButton = document.querySelector('.action-button[title*="Controles"]');
-      if (menuButton) {
-        if (Config.controlVisible) {
-          menuButton.classList.add('active');
-        } else {
-          menuButton.classList.remove('active');
-        }
+    }
+    
+    // Actualizar botón de menú
+    const menuButton = document.querySelector('.action-button[title*="Controles"]');
+    if (menuButton) {
+      if (Config.controlVisible) {
+        menuButton.classList.add('active');
+      } else {
+        menuButton.classList.remove('active');
       }
     }
   },
