@@ -554,8 +554,35 @@ const UI = {
     if (controles) {
       if (Config.controlVisible) {
         controles.style('display', 'block');
+        
+        // Para dispositivos móviles, añadir clase additional
+        if (typeof DeviceDetector !== 'undefined' && DeviceDetector.isMobile) {
+          // Esperar un frame para que se aplique el display: block
+          setTimeout(() => {
+            controles.elt.classList.add('visible');
+          }, 10);
+        }
       } else {
-        controles.style('display', 'none');
+        // Para dispositivos móviles, primero quitar la clase
+        if (typeof DeviceDetector !== 'undefined' && DeviceDetector.isMobile) {
+          controles.elt.classList.remove('visible');
+          // Esperar a que termine la transición para ocultar
+          setTimeout(() => {
+            controles.style('display', 'none');
+          }, 300);
+        } else {
+          controles.style('display', 'none');
+        }
+      }
+      
+      // Actualizar botón de menú
+      const menuButton = document.querySelector('.action-button[title*="Controles"]');
+      if (menuButton) {
+        if (Config.controlVisible) {
+          menuButton.classList.add('active');
+        } else {
+          menuButton.classList.remove('active');
+        }
       }
     }
   },
@@ -594,6 +621,11 @@ const UI = {
         welcomePopup.parentNode.removeChild(welcomePopup);
       }
     }, 500); // Tiempo suficiente para que termine la animación
+    
+    // Para dispositivos móviles, mostrar un tooltip sobre cómo usar la aplicación
+    if (typeof DeviceDetector !== 'undefined' && DeviceDetector.isMobile) {
+      this._mostrarTutorialMovil();
+    }
   },
   
   // Función para verificar si debemos mostrar el popup de bienvenida
@@ -628,5 +660,104 @@ const UI = {
   // Método para verificar si está habilitada la creación de partículas con clic
   shouldAddParticleOnClick() {
     return this.addParticleOnClickEnabled;
+  },
+  
+  // Método para mostrar un tutorial breve en dispositivos móviles
+  _mostrarTutorialMovil() {
+    // Crear tooltips secuenciales
+    const tooltips = [
+      {
+        mensaje: 'Toca aquí para mostrar los controles',
+        posicion: 'right',
+        target: '.action-button[title*="Controles"]',
+        duracion: 4000
+      },
+      {
+        mensaje: 'Toca la pantalla para añadir partículas',
+        posicion: 'bottom',
+        target: 'canvas',
+        duracion: 4000
+      },
+      {
+        mensaje: 'Usa estos botones para controlar la animación',
+        posicion: 'top',
+        target: '#action-buttons',
+        duracion: 4000
+      }
+    ];
+    
+    // Mostrar tooltips en secuencia
+    let delay = 1000;
+    tooltips.forEach((tooltip, index) => {
+      setTimeout(() => {
+        this._mostrarTooltip(tooltip.mensaje, tooltip.posicion, tooltip.target, tooltip.duracion);
+      }, delay);
+      delay += tooltip.duracion + 500; // Esperar a que termine el tooltip anterior más un pequeño delay
+    });
+  },
+  
+  // Método para mostrar un tooltip
+  _mostrarTooltip(mensaje, posicion, targetSelector, duracion = 3000) {
+    const target = document.querySelector(targetSelector);
+    if (!target) return;
+    
+    // Crear tooltip
+    const tooltip = document.createElement('div');
+    tooltip.className = 'tutorial-tooltip';
+    tooltip.textContent = mensaje;
+    
+    // Estilar tooltip
+    tooltip.style.position = 'fixed';
+    tooltip.style.padding = '10px 15px';
+    tooltip.style.backgroundColor = 'rgba(30, 39, 46, 0.9)';
+    tooltip.style.color = 'white';
+    tooltip.style.borderRadius = '5px';
+    tooltip.style.boxShadow = '0 2px 10px rgba(0, 0, 0, 0.3)';
+    tooltip.style.zIndex = '1000';
+    tooltip.style.maxWidth = '200px';
+    tooltip.style.textAlign = 'center';
+    tooltip.style.fontSize = '14px';
+    tooltip.style.opacity = '0';
+    tooltip.style.transition = 'opacity 0.3s ease';
+    
+    // Posicionar tooltip
+    const targetRect = target.getBoundingClientRect();
+    
+    switch (posicion) {
+      case 'top':
+        tooltip.style.bottom = (window.innerHeight - targetRect.top + 10) + 'px';
+        tooltip.style.left = (targetRect.left + targetRect.width / 2) + 'px';
+        tooltip.style.transform = 'translateX(-50%)';
+        break;
+      case 'bottom':
+        tooltip.style.top = (targetRect.bottom + 10) + 'px';
+        tooltip.style.left = (targetRect.left + targetRect.width / 2) + 'px';
+        tooltip.style.transform = 'translateX(-50%)';
+        break;
+      case 'left':
+        tooltip.style.right = (window.innerWidth - targetRect.left + 10) + 'px';
+        tooltip.style.top = (targetRect.top + targetRect.height / 2) + 'px';
+        tooltip.style.transform = 'translateY(-50%)';
+        break;
+      case 'right':
+        tooltip.style.left = (targetRect.right + 10) + 'px';
+        tooltip.style.top = (targetRect.top + targetRect.height / 2) + 'px';
+        tooltip.style.transform = 'translateY(-50%)';
+        break;
+    }
+    
+    // Añadir al DOM
+    document.body.appendChild(tooltip);
+    
+    // Mostrar y luego ocultar
+    setTimeout(() => { tooltip.style.opacity = '1'; }, 10);
+    setTimeout(() => { 
+      tooltip.style.opacity = '0'; 
+      setTimeout(() => {
+        if (tooltip.parentNode) {
+          tooltip.parentNode.removeChild(tooltip);
+        }
+      }, 300);
+    }, duracion);
   }
 }; 

@@ -6,6 +6,9 @@
 // Variables para dimensiones del campo
 let cols, rows;
 
+// Contador de frames para optimización
+let frameCounter = 0;
+
 function setup() {
   console.log("=== Iniciando Pattern Animator - Versión Modular ===");
   
@@ -32,6 +35,18 @@ function setup() {
     btnElement.classList.add('active');
   }
   
+  // Si es un dispositivo móvil, adaptar la interfaz
+  if (typeof DeviceDetector !== 'undefined' && DeviceDetector.isMobile) {
+    // Ajustar controles iniciales
+    const controles = select('#controles');
+    if (controles) {
+      controles.style('display', Config.controlVisible ? 'block' : 'none');
+    }
+    
+    // Realizar capturas de eventos especiales para móviles
+    _configurarEventosMoviles();
+  }
+  
   console.log("Setup completado");
 }
 
@@ -54,9 +69,80 @@ function draw() {
     VisualEffects.aplicarRuidoGrafico();
     VisualEffects.aplicarDesenfoque(pg);
     
+    // 6. Ajustar rendimiento para dispositivos móviles (cada 60 frames)
+    frameCounter++;
+    if (frameCounter % 60 === 0 && typeof DeviceDetector !== 'undefined') {
+      DeviceDetector.ajustarRendimiento();
+    }
   } catch (e) {
     console.error("Error en draw():", e);
     console.error("Stack:", e.stack);
+  }
+}
+
+// Configura eventos especiales para móviles
+function _configurarEventosMoviles() {
+  // Añadir evento para ocultar panel de control al tocar fuera de él
+  document.addEventListener('touchstart', (event) => {
+    const controles = document.getElementById('controles');
+    if (Config.controlVisible && controles && !controles.contains(event.target) && 
+        !event.target.closest('#action-buttons')) {
+      UI.toggleVisibilidad();
+    }
+  });
+  
+  // Añadir mensaje de orientación para modo horizontal
+  window.addEventListener('orientationchange', mostrarMensajeOrientacion);
+  
+  // Verificar orientación inicial
+  mostrarMensajeOrientacion();
+}
+
+// Muestra mensaje para orientación horizontal en móviles
+function mostrarMensajeOrientacion() {
+  if (typeof DeviceDetector !== 'undefined' && 
+      DeviceDetector.isMobile && 
+      !DeviceDetector.isTablet) {
+    
+    // Verificar si estamos en modo retrato
+    const isPortrait = window.innerHeight > window.innerWidth;
+    
+    // Crear o actualizar el mensaje de orientación
+    let orientationMsg = document.getElementById('orientation-message');
+    
+    if (isPortrait) {
+      if (!orientationMsg) {
+        orientationMsg = document.createElement('div');
+        orientationMsg.id = 'orientation-message';
+        orientationMsg.style.position = 'fixed';
+        orientationMsg.style.top = '10px';
+        orientationMsg.style.left = '50%';
+        orientationMsg.style.transform = 'translateX(-50%)';
+        orientationMsg.style.backgroundColor = 'rgba(30, 39, 46, 0.8)';
+        orientationMsg.style.color = 'white';
+        orientationMsg.style.padding = '10px 15px';
+        orientationMsg.style.borderRadius = '5px';
+        orientationMsg.style.zIndex = '1000';
+        orientationMsg.style.textAlign = 'center';
+        orientationMsg.style.fontSize = '14px';
+        orientationMsg.style.transition = 'opacity 0.5s ease';
+        orientationMsg.innerHTML = 'Para una mejor experiencia, gira tu dispositivo a modo horizontal <span class="material-icons" style="vertical-align: middle;">screen_rotation</span>';
+        document.body.appendChild(orientationMsg);
+        
+        // Ocultar después de unos segundos
+        setTimeout(() => {
+          orientationMsg.style.opacity = '0';
+        }, 5000);
+      } else {
+        orientationMsg.style.display = 'block';
+        orientationMsg.style.opacity = '1';
+        setTimeout(() => {
+          orientationMsg.style.opacity = '0';
+        }, 5000);
+      }
+    } else if (orientationMsg) {
+      orientationMsg.style.display = 'none';
+    }
   }
 }
 
@@ -142,6 +228,11 @@ function windowResized() {
   let dimensiones = FlowField.inicializar(width, height, Config.escala);
   cols = dimensiones.cols;
   rows = dimensiones.rows;
+  
+  // Si se ha cambiado la orientación en un dispositivo móvil, mostrar mensaje
+  if (typeof DeviceDetector !== 'undefined' && DeviceDetector.isMobile) {
+    mostrarMensajeOrientacion();
+  }
   
   console.log(`Canvas redimensionado a ${width}x${height} (tamaño de ventana)`);
 } 

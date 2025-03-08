@@ -2,7 +2,10 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#000000">
   <title>Pattern Animator</title>
   
   <!-- Información básica del sitio -->
@@ -40,8 +43,15 @@
   
   <!-- Estilos CSS -->
   <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="css/mobile.css">
 </head>
 <body>
+  <!-- Indicador de carga -->
+  <div id="loading-indicator">
+    <div class="spinner"></div>
+    <p>Cargando...</p>
+  </div>
+
   <!-- Popup de bienvenida -->
   <div id="welcome-popup">
     <div class="popup-content">
@@ -64,6 +74,7 @@
     <p><b>S</b> - Guardar imagen</p>
     <p><b>F</b> - Pantalla completa</p>
     <p><b>R</b> - Reiniciar partículas</p>
+    <p><b>Clic/Toque</b> - Añadir partículas</p>
   </div>
   
   <!-- Botones de acción lateral -->
@@ -89,6 +100,7 @@
   <script src="js/config.js"></script>
   <script src="js/utils/color-utils.js"></script>
   <script src="js/utils/shape-utils.js"></script>
+  <script src="js/utils/device-detector.js"></script>
   <script src="js/core/flow-field.js"></script>
   <script src="js/core/particula.js"></script>
   <script src="js/core/particle-system.js"></script>

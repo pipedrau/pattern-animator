@@ -1,0 +1,184 @@
+/* mobile.css - Estilos responsivos para Pattern Animator */
+
+/* Estilos para tabletas (iPad y similares) */
+@media screen and (max-width: 1024px) {
+  /* Panel de control ajustado */
+  #controles {
+    width: 280px;
+    max-height: 90vh;
+    left: -290px; /* Oculto por defecto */
+    transition: left 0.3s ease;
+  }
+  
+  #controles.visible {
+    left: 10px;
+  }
+  
+  /* Hacer que el panel se muestre inicialmente oculto */
+  body.mobile-view #controles {
+    left: -290px;
+  }
+  
+  /* Aumentar tamaño de botones para mejor interacción táctil */
+  .action-button {
+    width: 52px;
+    height: 52px;
+    margin-bottom: 18px;
+  }
+
+  /* Ajustar el popup de bienvenida */
+  .popup-content {
+    max-width: 60%;
+    max-height: 60%;
+  }
+  
+  .popup-content img {
+    max-height: 60vh;
+  }
+  
+  /* Hacer el botón de cerrar más grande para facilitar el toque */
+  .popup-close {
+    width: 36px;
+    height: 36px;
+  }
+}
+
+/* Estilos para dispositivos móviles */
+@media screen and (max-width: 768px) {
+  /* Panel de control más ancho para móviles */
+  #controles {
+    width: 85%;
+    max-width: 360px;
+    max-height: 85vh;
+    left: -100%; /* Oculto por defecto */
+    top: 5px;
+  }
+  
+  #controles.visible {
+    left: 5px;
+  }
+  
+  /* Mover botones de acción a la parte inferior (estilo dock) */
+  #action-buttons {
+    top: auto;
+    bottom: 15px;
+    right: 50%;
+    transform: translateX(50%);
+    flex-direction: row;
+    justify-content: center;
+    width: 100%;
+    padding: 10px 0;
+    background-color: rgba(30, 39, 46, 0.7);
+    border-radius: 15px 15px 0 0;
+  }
+  
+  .action-button {
+    width: 56px;
+    height: 56px;
+    margin: 0 10px;
+    margin-bottom: 0;
+  }
+  
+  /* Ajustar popup de bienvenida */
+  .popup-content {
+    max-width: 85%;
+    max-height: 60%;
+  }
+  
+  .popup-content img {
+    max-height: 60vh;
+  }
+  
+  /* Popup de ayuda */
+  #help-popup {
+    top: auto;
+    bottom: 80px;
+    left: 5px;
+    right: 5px;
+    max-width: none;
+    width: auto;
+    transform: translateY(110%);
+  }
+  
+  #help-popup.visible {
+    transform: translateY(0);
+  }
+  
+  #help-toggle {
+    top: auto;
+    bottom: 85px;
+    right: 10px;
+  }
+  
+  /* Inputs y controles más grandes para dedos */
+  input, select, button {
+    padding: 12px 15px;
+    font-size: 16px; /* El mínimo recomendado para evitar zoom automático en iOS */
+  }
+  
+  button {
+    padding: 12px 15px;
+  }
+  
+  input[type="range"] {
+    height: 10px;
+  }
+  
+  input[type="range"]::-webkit-slider-thumb {
+    width: 24px;
+    height: 24px;
+  }
+  
+  /* Ajustar el popup de bienvenida para dispositivos pequeños */
+  #welcome-popup {
+    background-color: rgba(0, 0, 0, 0.9);
+  }
+  
+  /* Ajustar textos y encabezados */
+  h3 {
+    font-size: 18px;
+  }
+  
+  p {
+    font-size: 15px;
+  }
+}
+
+/* Estilos para dispositivos muy pequeños */
+@media screen and (max-width: 480px) {
+  #controles {
+    width: 92%;
+    max-width: none;
+  }
+  
+  /* Reducir margen entre botones de acción */
+  .action-button {
+    margin: 0 6px;
+  }
+  
+  /* Ajustar popup de bienvenida */
+  .popup-content {
+    max-width: 95%;
+  }
+  
+  /* Ajustar grupos de inputs para pantallas pequeñas */
+  .input-group {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .input-group p {
+    width: 100%;
+    margin-bottom: 5px;
+  }
+  
+  .input-group input,
+  .input-group div {
+    width: 100% !important;
+  }
+  
+  /* Ocultar elementos menos importantes en pantallas muy pequeñas */
+  .color-preview {
+    height: 20px;
+  }
+} 
