@@ -72,7 +72,7 @@ h3 {
 }
 
 .collapsible-header {
-  background-color: rgba(61, 61, 82, 0.6);
+  background-color: rgba(61, 82, 74, 0.6);
   color: white;
   padding: 10px 15px;
   border-radius: 6px;
@@ -320,12 +320,18 @@ input[type="range"]::-webkit-slider-thumb {
 }
 
 .color-preview {
-  width: 100%;
+  width: 30px;
   height: 30px;
   border-radius: 4px;
-  margin-bottom: 5px;
+  margin: 5px 0;
   border: 1px solid rgba(255, 255, 255, 0.2);
-  box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.2);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.color-preview:hover {
+  transform: scale(1.05);
+  box-shadow: 0 0 5px rgba(255, 255, 255, 0.3);
 }
 
 /* Checkboxes personalizados */
@@ -419,4 +425,30 @@ input[type="checkbox"] {
 .action-button.active {
   background-color: #5e72e4;
   color: white;
+}
+
+/* Estilos para colores recientes */
+.colores-recientes-container {
+  margin: 15px 0;
+}
+
+.colores-recientes-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.color-reciente {
+  width: 30px;
+  height: 30px;
+  border-radius: 4px;
+  cursor: pointer;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  transition: all 0.2s ease;
+}
+
+.color-reciente:hover {
+  transform: scale(1.1);
+  box-shadow: 0 0 8px rgba(255, 255, 255, 0.3);
 } 

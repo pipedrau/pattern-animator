@@ -210,6 +210,60 @@ const UI = {
       this._crearControlColor(seccion, nombresColores[i], i);
     }
     
+    // Contenedor para colores recientes
+    let recientesContainer = createDiv();
+    recientesContainer.class('colores-recientes-container');
+    recientesContainer.parent(seccion);
+    
+    let recientesLabel = createElement('p', 'Colores recientes:');
+    recientesLabel.parent(recientesContainer);
+    
+    // Contenedor para los botones de colores recientes
+    let recientesGrid = createDiv();
+    recientesGrid.class('colores-recientes-grid');
+    recientesGrid.parent(recientesContainer);
+    
+    // Inicializar colores recientes desde localStorage si existen
+    if (!window.coloresRecientes) {
+      try {
+        const coloresGuardados = localStorage.getItem('coloresRecientes');
+        if (coloresGuardados) {
+          window.coloresRecientes = JSON.parse(coloresGuardados);
+        } else {
+          window.coloresRecientes = [];
+        }
+      } catch (e) {
+        console.warn('Error al cargar colores recientes:', e);
+        window.coloresRecientes = [];
+      }
+    }
+    
+    // Crear botones para colores recientes (inicialmente vacíos)
+    for (let i = 0; i < 5; i++) {
+      let colorBtn = createDiv();
+      colorBtn.class('color-reciente');
+      colorBtn.attribute('data-index', i);
+      if (window.coloresRecientes && window.coloresRecientes[i]) {
+        colorBtn.style('background-color', window.coloresRecientes[i]);
+        colorBtn.style('opacity', '1');
+      } else {
+        colorBtn.style('background-color', '#888888');
+        colorBtn.style('opacity', '0.3');
+      }
+      colorBtn.parent(recientesGrid);
+      
+      // Al hacer clic en un color reciente, aplicarlo al color actual seleccionado
+      colorBtn.mousePressed(() => {
+        if (window.coloresRecientes && window.coloresRecientes[i]) {
+          const colorSeleccionado = window.selectedColorIndex || 0;
+          if (this.colorPickers && this.colorPickers[colorSeleccionado]) {
+            this.colorPickers[colorSeleccionado].picker.value(window.coloresRecientes[i]);
+            this._actualizarColorEnPaleta(colorSeleccionado, window.coloresRecientes[i]);
+          }
+        }
+      });
+    }
+    
     // Botón para restaurar colores originales
     let restaurarColoresBtn = createButton('Restaurar colores predeterminados');
     restaurarColoresBtn.parent(seccion);
@@ -499,6 +553,16 @@ const UI = {
     preview.id(`color-preview-${indice}`);
     preview.parent(colorContainer);
     
+    // Al hacer clic en la previsualización, marcar este color como seleccionado
+    preview.mousePressed(() => {
+      // Quitar selección previa
+      selectAll('.color-preview').forEach(el => el.style('border', '1px solid rgba(255, 255, 255, 0.2)'));
+      
+      // Marcar este color como seleccionado
+      preview.style('border', '2px solid #5e72e4');
+      window.selectedColorIndex = indice;
+    });
+    
     // Asegurar que la paleta tenga colores antes de inicializar
     if (Config.paletaColores.length === 0) {
       ColorUtils.inicializarPaleta();
@@ -520,19 +584,9 @@ const UI = {
     colorPicker.input(() => {
       // Obtener el color seleccionado como string para evitar problemas con el tipo
       const nuevoColor = colorPicker.value();
-      console.log(`Cambiando color ${indice} a: ${nuevoColor}`);
       
-      // Actualizar la paleta
-      ColorUtils.actualizarColor(indice, color(nuevoColor));
-      
-      // Actualizar la previsualización
-      preview.style('background-color', nuevoColor);
-      
-      // Actualizar todas las partículas existentes con los nuevos colores
-      for (let p of ParticleSystem.particulas) {
-        // Asignar colores de la paleta actualizada
-        p.color = ColorUtils.obtenerColorAleatorio();
-      }
+      // Usar el método centralizado para actualizar el color
+      this._actualizarColorEnPaleta(indice, nuevoColor);
     });
     
     // Añadir a una lista para actualizarlos más tarde
@@ -787,5 +841,97 @@ const UI = {
         }
       }, 300);
     }, duracion);
+  },
+  
+  // Método para guardar colores recientes
+  _guardarColorReciente(nuevoColor) {
+    if (!window.coloresRecientes) {
+      window.coloresRecientes = [];
+    }
+    
+    // Solo agregar colores válidos y bien formateados
+    if (!nuevoColor || nuevoColor === 'undefined' || nuevoColor === 'null') {
+      console.warn('Intentando guardar un color no válido:', nuevoColor);
+      return;
+    }
+    
+    // Asegurarse de que el color tenga el formato correcto
+    try {
+      // Normalizar el formato del color para evitar duplicados por formato
+      const colorTemp = color(nuevoColor);
+      // Convertir a formato hexadecimal para almacenamiento consistente
+      nuevoColor = colorTemp.toString('#rrggbb');
+    } catch (e) {
+      console.error('Error al normalizar color:', e);
+      return;
+    }
+    
+    // Comprobar si el color ya está en la lista (para no duplicarlo)
+    const existe = window.coloresRecientes.findIndex(colorGuardado => 
+      color(colorGuardado).toString('#rrggbb') === nuevoColor
+    );
+    
+    if (existe !== -1) {
+      // Si el color ya existe, moverlo al principio (sin duplicar)
+      window.coloresRecientes.splice(existe, 1);
+      window.coloresRecientes.unshift(nuevoColor);
+    } else {
+      // Añadir al principio 
+      window.coloresRecientes.unshift(nuevoColor);
+      // Mantener solo los 5 más recientes
+      if (window.coloresRecientes.length > 5) {
+        window.coloresRecientes = window.coloresRecientes.slice(0, 5);
+      }
+    }
+    
+    // Guardar en localStorage para persistencia
+    try {
+      localStorage.setItem('coloresRecientes', JSON.stringify(window.coloresRecientes));
+    } catch (e) {
+      console.warn('No se pudo guardar colores en localStorage:', e);
+    }
+    
+    // Actualizar los botones de colores recientes
+    this._actualizarBotonesColoresRecientes();
+    
+    // Debug para verificar el estado de los colores recientes
+    console.log('Colores recientes actualizados:', window.coloresRecientes);
+  },
+  
+  // Método para actualizar los botones de colores recientes
+  _actualizarBotonesColoresRecientes() {
+    const botones = selectAll('.color-reciente');
+    
+    botones.forEach((btn, i) => {
+      if (window.coloresRecientes && window.coloresRecientes[i]) {
+        btn.style('background-color', window.coloresRecientes[i]);
+        btn.style('opacity', '1');
+      } else {
+        btn.style('background-color', '#888888');
+        btn.style('opacity', '0.3');
+      }
+    });
+  },
+  
+  // Método para actualizar el color en la paleta
+  _actualizarColorEnPaleta(indice, nuevoColor) {
+    console.log(`Actualizando color ${indice} a: ${nuevoColor}`);
+    
+    // Actualizar la visualización del color
+    if (this.colorPickers && this.colorPickers[indice]) {
+      this.colorPickers[indice].preview.style('background-color', nuevoColor);
+    }
+    
+    // Actualizar la paleta usando ColorUtils
+    ColorUtils.actualizarColor(indice, color(nuevoColor));
+    
+    // Guardar en colores recientes
+    this._guardarColorReciente(nuevoColor);
+    
+    // Actualizar todas las partículas existentes con los nuevos colores
+    for (let p of ParticleSystem.particulas) {
+      // Asignar colores de la paleta actualizada
+      p.color = ColorUtils.obtenerColorAleatorio();
+    }
   }
 }; 
