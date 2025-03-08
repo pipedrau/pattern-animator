@@ -27,6 +27,26 @@ const Config = {
   modosDisponibles: [
     'Flujo de Campo',
     'Movimiento Aleatorio',
+    'Onda Senoidal',
+    'Movimiento Zigzag',
+    'Movimiento Circular',
+    'Movimiento Espiral',
+    'Movimiento Lissajous',
+    'Movimiento Browniano',
+    'Atracción al Mouse',
+    'Repulsión del Mouse',
+    'Movimiento Figura Ocho',
+    'Movimiento Corazón',
+    'Movimiento Órbita',
+    'Movimiento Explosión',
+    'Movimiento Rosa Polar',
+    'Movimiento Fractal',
+    'Mover Abajo',
+    'Mover Arriba',
+    'Mover Derecha',
+    'Mover Izquierda',
+    'Mover Diagonal Derecha',
+    'Mover Diagonal Izquierda',
     'Gravedad',
     'Caos'
   ],
@@ -36,7 +56,7 @@ const Config = {
   ruidoGrafico: 0,
   
   // Interfaz
-  mostrarInfo: true,
+  mostrarInfo: false,
   controlVisible: true,
   
   // Paleta de colores

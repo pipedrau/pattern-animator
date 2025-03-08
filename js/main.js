@@ -45,9 +45,6 @@ function draw() {
     VisualEffects.aplicarRuidoGrafico();
     VisualEffects.aplicarDesenfoque(pg);
     
-    // 6. Mostrar información del sistema
-    UI.mostrarInfoSistema();
-    
   } catch (e) {
     console.error("Error en draw():", e);
     console.error("Stack:", e.stack);

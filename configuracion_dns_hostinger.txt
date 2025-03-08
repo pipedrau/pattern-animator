@@ -1,0 +1,25 @@
+CONFIGURACIÓN DE REGISTROS DNS EN HOSTINGER PARA GITHUB PAGES
+
+1. REGISTROS A (Apuntando a los servidores IP de GitHub Pages)
+   | Tipo | Nombre | Valor | TTL |
+   |------|--------|-------|-----|
+   | A    | @      | 185.199.108.153 | 14400 (o el valor predeterminado) |
+   | A    | @      | 185.199.109.153 | 14400 (o el valor predeterminado) |
+   | A    | @      | 185.199.110.153 | 14400 (o el valor predeterminado) |
+   | A    | @      | 185.199.111.153 | 14400 (o el valor predeterminado) |
+
+2. REGISTRO CNAME PARA WWW (Opcional, si quieres que www.pipedrau.com también funcione)
+   | Tipo  | Nombre | Valor | TTL |
+   |-------|--------|-------|-----|
+   | CNAME | www    | pipedrau.github.io | 14400 (o el valor predeterminado) |
+
+NOTAS IMPORTANTES:
+- Elimina cualquier otro registro A o CNAME existente que pueda estar en conflicto
+- La propagación de DNS puede tomar hasta 48 horas
+- En Hostinger, el campo "Nombre" a veces requiere solo el subdominio (sin el dominio principal)
+- Si ves opciones para "Apuntar a" en lugar de "Valor", selecciona "Dirección IP" para registros A
+
+VERIFICACIÓN:
+Después de configurar, puedes verificar la propagación DNS con:
+- https://dnschecker.org
+- https://whatsmydns.net 

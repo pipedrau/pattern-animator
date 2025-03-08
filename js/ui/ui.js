@@ -123,11 +123,11 @@ const UI = {
       }
     });
     
-    // Velocidad máxima
+    // Velocidad máxima - Cambiado a rango 0-100
     let velocidadLabel = createElement('p', 'Velocidad: ' + Config.velocidadMaxima);
     velocidadLabel.parent(seccionBasica);
     
-    let velocidadSlider = createSlider(1, 10, Config.velocidadMaxima);
+    let velocidadSlider = createSlider(0, 100, Config.velocidadMaxima);
     velocidadSlider.parent(seccionBasica);
     velocidadSlider.input(() => {
       Config.velocidadMaxima = velocidadSlider.value();
@@ -169,22 +169,6 @@ const UI = {
     turbulenciaSlider.input(() => {
       Config.turbulencia = turbulenciaSlider.value();
       turbulenciaLabel.html('Turbulencia: ' + Config.turbulencia.toFixed(2));
-    });
-    
-    // Escala del campo
-    let escalaLabel = createElement('p', 'Escala del campo: ' + Config.escala);
-    escalaLabel.parent(seccionMovimiento);
-    
-    let escalaSlider = createSlider(5, 50, Config.escala);
-    escalaSlider.parent(seccionMovimiento);
-    escalaSlider.input(() => {
-      Config.escala = escalaSlider.value();
-      escalaLabel.html('Escala del campo: ' + Config.escala);
-      
-      // Reinicializar el campo con la nueva escala
-      let dimensiones = FlowField.inicializar(width, height, Config.escala);
-      cols = dimensiones.cols;
-      rows = dimensiones.rows;
     });
     
     // Sección de apariencia
@@ -341,18 +325,5 @@ const UI = {
         controles.style('display', 'none');
       }
     }
-  },
-  
-  mostrarInfoSistema() {
-    if (!Config.mostrarInfo) return;
-    
-    fill(255);
-    noStroke();
-    textSize(12);
-    textAlign(LEFT, TOP);
-    text(`FPS: ${floor(frameRate())}`, 10, height - 40);
-    text(`Partículas: ${ParticleSystem.particulas.length}`, 10, height - 20);
-    text(`Modo: ${Config.modoMovimiento}`, 10, height - 60);
-    text(`Canvas: ${width}x${height}`, 10, height - 80);
   }
 }; 
