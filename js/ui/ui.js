@@ -179,10 +179,34 @@ const UI = {
     let aparienciaLabel = createElement('h3', 'Apariencia');
     aparienciaLabel.parent(seccionApariencia);
     
+    // Forma de partícula
+    let formaLabel = createElement('p', 'Forma:');
+    formaLabel.parent(seccionApariencia);
+    
+    let formaSelector = createSelect();
+    formaSelector.parent(seccionApariencia);
+    
+    // Usar las formas disponibles desde la configuración
+    for (let forma of Config.formasDisponibles) {
+      formaSelector.option(forma);
+    }
+    
+    formaSelector.selected(Config.formaParticula);
+    formaSelector.changed(() => {
+      Config.formaParticula = formaSelector.value();
+    });
+    
     // Mostrar rastro
+    let seccionRastro = createDiv();
+    seccionRastro.class('control-section');
+    seccionRastro.parent(this.controlPanel);
+    
+    let rastroTitle = createElement('h3', 'Rastro de Partículas');
+    rastroTitle.parent(seccionRastro);
+    
     let rastroContainer = createDiv();
     rastroContainer.class('control-item');
-    rastroContainer.parent(seccionApariencia);
+    rastroContainer.parent(seccionRastro);
     
     let rastroCheck = createCheckbox('Mostrar rastro', Config.mostrarRastro);
     rastroCheck.parent(rastroContainer);
@@ -201,10 +225,10 @@ const UI = {
     
     // Longitud del rastro
     let rastroLengthLabel = createElement('p', 'Longitud del rastro: ' + Config.trailLength);
-    rastroLengthLabel.parent(seccionApariencia);
+    rastroLengthLabel.parent(seccionRastro);
     
-    let rastroLengthSlider = createSlider(1, 50, Config.trailLength);
-    rastroLengthSlider.parent(seccionApariencia);
+    let rastroLengthSlider = createSlider(1, 100, Config.trailLength);
+    rastroLengthSlider.parent(seccionRastro);
     rastroLengthSlider.input(() => {
       Config.trailLength = rastroLengthSlider.value();
       rastroLengthLabel.html('Longitud del rastro: ' + Config.trailLength);
@@ -213,6 +237,17 @@ const UI = {
       for (let p of ParticleSystem.particulas) {
         p.maxHistory = Config.trailLength;
       }
+    });
+    
+    // Tamaño final del rastro
+    let rastroFinalSizeLabel = createElement('p', 'Tamaño final del rastro: ' + Config.trailFinalSize);
+    rastroFinalSizeLabel.parent(seccionRastro);
+    
+    let rastroFinalSizeSlider = createSlider(0.05, 1, Config.trailFinalSize, 0.01);
+    rastroFinalSizeSlider.parent(seccionRastro);
+    rastroFinalSizeSlider.input(() => {
+      Config.trailFinalSize = rastroFinalSizeSlider.value();
+      rastroFinalSizeLabel.html('Tamaño final del rastro: ' + Config.trailFinalSize.toFixed(2));
     });
     
     // Rotación
@@ -224,21 +259,6 @@ const UI = {
     rotacionSlider.input(() => {
       Config.rotacionParticula = rotacionSlider.value();
       rotacionLabel.html('Rotación: ' + Config.rotacionParticula.toFixed(3));
-    });
-    
-    // Forma de partícula
-    let formaLabel = createElement('p', 'Forma:');
-    formaLabel.parent(seccionApariencia);
-    
-    let formaSelector = createSelect();
-    formaSelector.parent(seccionApariencia);
-    formaSelector.option('Círculo');
-    formaSelector.option('Cuadrado');
-    formaSelector.option('Triángulo');
-    formaSelector.option('Irregular');
-    formaSelector.selected(Config.formaParticula);
-    formaSelector.changed(() => {
-      Config.formaParticula = formaSelector.value();
     });
     
     // Color de fondo

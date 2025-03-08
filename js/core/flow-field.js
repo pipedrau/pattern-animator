@@ -1,24 +1,27 @@
 /**
  * flow-field.js
- * Módulo para gestionar el campo de flujo
+ * Clase para generar y gestionar un campo de vectores de flujo
  */
 const FlowField = {
   campo: [],
   cols: 0,
   rows: 0,
+  zOffset: 0,
   
   inicializar(width, height, escala) {
     console.log("Inicializando campo de flujo");
     
-    this.cols = floor(width / escala);
-    this.rows = floor(height / escala);
-    console.log(`Dimensiones del campo: ${this.cols} x ${this.rows}`);
+    // Calcular número de columnas y filas basado en las dimensiones y la escala
+    this.cols = Math.floor(width / escala);
+    this.rows = Math.floor(height / escala);
     
-    // Inicializar el array si no existe o tiene tamaño incorrecto
-    if (this.campo.length !== this.cols * this.rows) {
-      this.campo = new Array(this.cols * this.rows);
-      console.log(`Creado campo de flujo con ${this.campo.length} elementos`);
-    }
+    console.log(`Campo de flujo: ${this.cols} x ${this.rows} celdas`);
+    
+    // Inicializar el campo con vectores vacíos
+    this.campo = new Array(this.cols * this.rows);
+    
+    // Inicializar el offset para el ruido Perlin
+    this.zOffset = random(1000);
     
     return {
       cols: this.cols,
@@ -27,62 +30,69 @@ const FlowField = {
   },
   
   calcular() {
-    let yOffset = 0;
+    // Calcular campo de flujo basado en ruido Perlin
+    let yoff = 0;
+    
     for (let y = 0; y < this.rows; y++) {
-      let xOffset = 0;
+      let xoff = 0;
+      
       for (let x = 0; x < this.cols; x++) {
-        let indice = x + y * this.cols;
+        // Calcular índice en el arreglo unidimensional
+        let idx = x + y * this.cols;
         
-        // Usar diferentes dimensiones de ruido para variedad
-        let angulo = noise(xOffset, yOffset, frameCount * 0.01) * TWO_PI * 4;
+        // Usar ruido Perlin para obtener un ángulo
+        // Multiplicamos por TWO_PI * 4 para obtener más variedad en las direcciones
+        let angulo = noise(xoff, yoff, this.zOffset) * TWO_PI * 4;
         
-        // Crear vector con el ángulo calculado
+        // Crear vector a partir del ángulo
         let vector = p5.Vector.fromAngle(angulo);
+        
+        // Normalizar el vector (magnitud 1)
         vector.setMag(1);
         
-        // Guardar el vector en el campo
-        this.campo[indice] = vector;
+        // Almacenar el vector en el campo
+        this.campo[idx] = vector;
         
-        xOffset += 0.1;
+        // Incrementar offset para el siguiente punto
+        xoff += 0.1;
       }
-      yOffset += 0.1;
+      
+      yoff += 0.1;
     }
+    
+    // Incrementar offset para animación en el tiempo
+    this.zOffset += 0.005;
     
     return this.campo;
   },
   
-  // Visualiza el campo de flujo (útil para depuración)
+  // Método para visualizar el campo (útil para depuración)
   visualizar(pg) {
-    let escala = Config.escala;
-    
-    pg.push();
-    pg.stroke(100, 100, 255, 100);
+    pg.stroke(128, 128, 255, 70);
     pg.strokeWeight(1);
     
     for (let y = 0; y < this.rows; y++) {
       for (let x = 0; x < this.cols; x++) {
-        let indice = x + y * this.cols;
-        let vector = this.campo[indice];
+        let idx = x + y * this.cols;
+        let vector = this.campo[idx];
         
-        if (!vector) continue;
-        
-        // Posición central del cuadro
-        let posX = x * escala + escala / 2;
-        let posY = y * escala + escala / 2;
-        
-        // Dibujar vector
-        pg.push();
-        pg.translate(posX, posY);
-        pg.line(0, 0, vector.x * escala * 0.5, vector.y * escala * 0.5);
-        
-        // Flecha en la punta
-        let angulo = vector.heading();
-        pg.rotate(angulo);
-        pg.line(0, 0, escala * 0.3, 0);
-        pg.pop();
+        if (vector) {
+          let escala = Config.escala;
+          let cx = x * escala + escala / 2;
+          let cy = y * escala + escala / 2;
+          
+          pg.push();
+          pg.translate(cx, cy);
+          pg.line(0, 0, vector.x * escala * 0.8, vector.y * escala * 0.8);
+          
+          // Dibujar una pequeña flecha en la punta
+          let angulo = vector.heading();
+          pg.rotate(angulo);
+          pg.line(escala * 0.6, 0, escala * 0.5, escala * 0.1);
+          pg.line(escala * 0.6, 0, escala * 0.5, -escala * 0.1);
+          pg.pop();
+        }
       }
     }
-    
-    pg.pop();
   }
 }; 

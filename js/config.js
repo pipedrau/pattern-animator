@@ -19,8 +19,24 @@ const Config = {
   escala: 20,
   mostrarRastro: false,
   trailLength: 20,
+  trailFinalSize: 1, // Tamaño final del rastro (proporción del tamaño original)
   formaParticula: 'Círculo',
   rotacionParticula: 0,
+  
+  // Opciones de forma
+  formasDisponibles: [
+    'Círculo',
+    'Cuadrado',
+    'Triángulo',
+    'Estrella',
+    'Pentágono',
+    'Hexágono',
+    'Octágono',
+    'Línea',
+    'Curva',
+    'Irregular',
+    'Línea Larga'
+  ],
   
   // Configuración de movimiento
   modoMovimiento: 'Flujo de Campo',
@@ -58,6 +74,21 @@ const Config = {
   // Interfaz
   mostrarInfo: false,
   controlVisible: true,
+  
+  // Configuración de efectos visuales avanzados
+  gradienteFondo: false,
+  fondoColor1: '#000000',
+  fondoColor2: '#FFFFFF',
+  gradienteParticulas: false,
+  particulaColorInterior: '#FFFFFF',
+  particulaColorExterior: '#000000',
+  glowActivo: false,
+  glowAmount: 0,
+  glowColor: '#FFFFFF',
+  strokeActivo: false,
+  strokeColor: '#FFFFFF',
+  strokeOpacity: 255,
+  strokeWeightValue: 1,
   
   // Paleta de colores
   paletaColores: []
