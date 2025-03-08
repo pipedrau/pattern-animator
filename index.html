@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pattern Animator</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
+  
+  <!-- Estilos CSS -->
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      background-color: #222;
+      font-family: Arial, sans-serif;
+      color: #fff;
+    }
+    
+    canvas {
+      display: block;
+      margin: 0 auto;
+    }
+    
+    #controles {
+      position: fixed;
+      right: 10px;
+      top: 10px;
+      width: 280px;
+      max-height: 90vh;
+      overflow-y: auto;
+      background-color: rgba(0, 0, 0, 0.7);
+      color: white;
+      padding: 15px;
+      border-radius: 10px;
+      z-index: 100;
+    }
+    
+    h3 {
+      margin-top: 5px;
+      margin-bottom: 10px;
+      color: #4CAF50;
+    }
+    
+    .control-section {
+      margin-bottom: 20px;
+      padding-bottom: 15px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    
+    input, select, button {
+      width: 100%;
+      margin-bottom: 10px;
+      padding: 5px;
+      box-sizing: border-box;
+    }
+    
+    button {
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      padding: 8px 15px;
+      text-align: center;
+      text-decoration: none;
+      display: inline-block;
+      font-size: 14px;
+      margin: 4px 2px;
+      cursor: pointer;
+      border-radius: 4px;
+    }
+    
+    button:hover {
+      background-color: #45a049;
+    }
+    
+    p {
+      margin: 5px 0;
+    }
+    
+    /* Estilos específicos para los controles de tamaño del canvas */
+    .input-group {
+      display: flex;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    
+    .input-group p {
+      width: 40%;
+      margin: 0;
+    }
+    
+    .input-group input {
+      width: 60%;
+    }
+    
+    input[type="number"] {
+      background-color: rgba(255, 255, 255, 0.1);
+      color: white;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      border-radius: 4px;
+    }
+    
+    /* Añadir un poco de espacio entre los controles */
+    input, button, select {
+      margin-bottom: 12px;
+    }
+  </style>
+</head>
+<body>
+  <div id="help-info">
+    <p>Presiona 'H' para ocultar/mostrar controles | 'S' para guardar imagen | 'F' para pantalla completa | 'R' para reiniciar</p>
+  </div>
+  
+  <!-- Cargar módulos en el orden correcto -->
+  <script src="js/config.js"></script>
+  <script src="js/utils/color-utils.js"></script>
+  <script src="js/core/particula.js"></script>
+  <script src="js/core/flow-field.js"></script>
+  <script src="js/core/particle-system.js"></script>
+  <script src="js/effects/visual-effects.js"></script>
+  <script src="js/ui/ui.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html> 
