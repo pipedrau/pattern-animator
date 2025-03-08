@@ -11,53 +11,79 @@ const UI = {
     this.controlPanel = createDiv();
     this.controlPanel.id('controles');
     
-    let titulo = createElement('h3', 'Controles de Pattern Animator');
+    let titulo = createElement('h3', 'Pattern Animator');
     titulo.parent(this.controlPanel);
     
+    // Secciones siempre visibles
+    this._crearSeccionBasica();
+    
+    // Secciones plegables
+    this._crearSeccionPatrones();
+    this._crearSeccionPaletaColores();
+    this._crearSeccionMovimiento();
+    this._crearSeccionApariencia();
+    this._crearSeccionRastro();
+    this._crearSeccionEfectos();
+    this._crearSeccionAcciones();
+    
+    console.log("Panel de control creado");
+    
+    // Inicializar las secciones plegables después de crear el DOM
+    this._inicializarSeccionesPlegables();
+  },
+  
+  // Crea una sección básica siempre visible
+  _crearSeccionBasica() {
+    let seccionBasica = createDiv();
+    seccionBasica.parent(this.controlPanel);
+    seccionBasica.class('control-section');
+    
     // Configuración del Canvas
-    let seccionCanvas = createDiv();
-    seccionCanvas.parent(this.controlPanel);
-    seccionCanvas.class('control-section');
+    let canvasLabel = createElement('h3', 'Configuración Básica');
+    canvasLabel.parent(seccionBasica);
     
-    let canvasLabel = createElement('h3', 'Tamaño del Canvas');
-    canvasLabel.parent(seccionCanvas);
+    // Dimensiones del canvas (en una línea)
+    let canvasDimensionsDiv = createDiv();
+    canvasDimensionsDiv.class('input-group');
+    canvasDimensionsDiv.parent(seccionBasica);
     
-    // Ancho del canvas
-    let anchoLabel = createElement('p', 'Ancho:');
-    anchoLabel.parent(seccionCanvas);
+    let dimensionsLabel = createElement('p', 'Dimensiones:');
+    dimensionsLabel.parent(canvasDimensionsDiv);
+    
+    let dimensionsContainer = createDiv();
+    dimensionsContainer.style('display', 'flex');
+    dimensionsContainer.style('width', '60%');
+    dimensionsContainer.style('gap', '5px');
+    dimensionsContainer.parent(canvasDimensionsDiv);
     
     let anchoInput = createInput(Config.canvasWidth.toString());
     anchoInput.attribute('type', 'number');
     anchoInput.attribute('min', '100');
     anchoInput.attribute('max', '5000');
-    anchoInput.parent(seccionCanvas);
+    anchoInput.style('width', '50%');
     anchoInput.id('anchoCanvas');
-    
-    // Alto del canvas
-    let altoLabel = createElement('p', 'Alto:');
-    altoLabel.parent(seccionCanvas);
+    anchoInput.parent(dimensionsContainer);
     
     let altoInput = createInput(Config.canvasHeight.toString());
     altoInput.attribute('type', 'number');
     altoInput.attribute('min', '100');
     altoInput.attribute('max', '5000');
-    altoInput.parent(seccionCanvas);
+    altoInput.style('width', '50%');
     altoInput.id('altoCanvas');
+    altoInput.parent(dimensionsContainer);
     
-    // Botón para aplicar el cambio de tamaño
-    let aplicarTamanoBtn = createButton('Aplicar tamaño');
-    aplicarTamanoBtn.parent(seccionCanvas);
+    let aplicarTamanoBtn = createButton('Aplicar');
+    aplicarTamanoBtn.parent(seccionBasica);
     aplicarTamanoBtn.mousePressed(() => {
       let nuevoAncho = parseInt(select('#anchoCanvas').value());
       let nuevoAlto = parseInt(select('#altoCanvas').value());
       
-      // Validar que los valores sean números válidos
+      // Validaciones
       if (isNaN(nuevoAncho) || isNaN(nuevoAlto)) {
         alert('Por favor, introduce valores numéricos válidos.');
         return;
       }
       
-      // Validar que los valores estén dentro de límites razonables
       if (nuevoAncho < 100 || nuevoAncho > 5000 || nuevoAlto < 100 || nuevoAlto > 5000) {
         alert('Por favor, introduce valores entre 100 y 5000.');
         return;
@@ -66,11 +92,6 @@ const UI = {
       // Aplicar el cambio de tamaño
       cambiarTamanoCanvas(nuevoAncho, nuevoAlto);
     });
-    
-    // Controles básicos
-    let seccionBasica = createDiv();
-    seccionBasica.parent(this.controlPanel);
-    seccionBasica.class('control-section');
     
     // Cantidad de partículas
     let cantidadLabel = createElement('p', 'Cantidad de partículas: ' + Config.cantidadParticulas);
@@ -82,25 +103,15 @@ const UI = {
       Config.cantidadParticulas = cantidadSlider.value();
       cantidadLabel.html('Cantidad de partículas: ' + Config.cantidadParticulas);
       
-      // Ajustar la cantidad de partículas
-      let diferencia = Config.cantidadParticulas - ParticleSystem.particulas.length;
-      
-      if (diferencia > 0) {
-        // Agregar partículas
-        for (let i = 0; i < diferencia; i++) {
-          ParticleSystem.agregarParticula(random(width), random(height));
-        }
-      } else if (diferencia < 0) {
-        // Eliminar partículas
-        ParticleSystem.eliminarParticulas(Math.abs(diferencia));
-      }
+      // Reinicializar para mantener el patrón
+      ParticleSystem.inicializar();
     });
     
     // Tamaño de partículas
     let tamanoLabel = createElement('p', 'Tamaño: ' + Config.tamanoParticula);
     tamanoLabel.parent(seccionBasica);
     
-    let tamanoSlider = createSlider(1, 500, Config.tamanoParticula);
+    let tamanoSlider = createSlider(1, 50, Config.tamanoParticula);
     tamanoSlider.parent(seccionBasica);
     tamanoSlider.input(() => {
       Config.tamanoParticula = tamanoSlider.value();
@@ -123,7 +134,7 @@ const UI = {
       }
     });
     
-    // Velocidad máxima - Cambiado a rango 0-100
+    // Velocidad máxima
     let velocidadLabel = createElement('p', 'Velocidad: ' + Config.velocidadMaxima);
     velocidadLabel.parent(seccionBasica);
     
@@ -138,18 +149,70 @@ const UI = {
         p.maxSpeed = Config.velocidadMaxima;
       }
     });
+  },
+  
+  // Crear sección plegable para los patrones iniciales
+  _crearSeccionPatrones() {
+    let seccion = this._crearSeccionPlegable('Patrón Inicial');
     
-    // Sección de movimiento
-    let seccionMovimiento = createDiv();
-    seccionMovimiento.parent(this.controlPanel);
-    seccionMovimiento.class('control-section');
+    let patronSelector = createSelect();
+    patronSelector.parent(seccion);
     
-    let movimientoLabel = createElement('h3', 'Modo de Movimiento');
-    movimientoLabel.parent(seccionMovimiento);
+    // Agregar las opciones disponibles
+    for (let patron of Config.patronesDisponibles) {
+      patronSelector.option(patron);
+    }
+    
+    // Establecer el valor actual
+    patronSelector.selected(Config.patronInicial);
+    
+    // Manejar cambios en la selección
+    patronSelector.changed(() => {
+      Config.patronInicial = patronSelector.value();
+      console.log(`Patrón seleccionado: ${Config.patronInicial}`);
+      
+      // Reiniciar el sistema de partículas para aplicar el nuevo patrón
+      ParticleSystem.inicializar();
+    });
+    
+    // Botón para aplicar manualmente
+    let aplicarPatronBtn = createButton('Aplicar Patrón');
+    aplicarPatronBtn.parent(seccion);
+    aplicarPatronBtn.mousePressed(() => {
+      ParticleSystem.inicializar();
+    });
+  },
+  
+  // Crear sección plegable para la paleta de colores
+  _crearSeccionPaletaColores() {
+    let seccion = this._crearSeccionPlegable('Paleta de Colores');
+    
+    // Crear controles para cada color principal
+    const nombresColores = ['Color 01', 'Color 02', 'Color 03', 'Color 04', 'Color 05'];
+    
+    for (let i = 0; i < 5; i++) {
+      this._crearControlColor(seccion, nombresColores[i], i);
+    }
+    
+    // Botón para restaurar colores originales
+    let restaurarColoresBtn = createButton('Restaurar colores predeterminados');
+    restaurarColoresBtn.parent(seccion);
+    restaurarColoresBtn.mousePressed(() => {
+      ColorUtils.inicializarPaleta();
+      // Actualizar los controles de color
+      this._actualizarControlesColor();
+      // Reiniciar el sistema para aplicar los nuevos colores
+      ParticleSystem.inicializar();
+    });
+  },
+  
+  // Crear sección plegable para el modo de movimiento
+  _crearSeccionMovimiento() {
+    let seccion = this._crearSeccionPlegable('Modo de Movimiento');
     
     // Modo de movimiento
     let modoSelector = createSelect();
-    modoSelector.parent(seccionMovimiento);
+    modoSelector.parent(seccion);
     
     for (let modo of Config.modosDisponibles) {
       modoSelector.option(modo);
@@ -162,29 +225,26 @@ const UI = {
     
     // Turbulencia
     let turbulenciaLabel = createElement('p', 'Turbulencia: ' + Config.turbulencia);
-    turbulenciaLabel.parent(seccionMovimiento);
+    turbulenciaLabel.parent(seccion);
     
     let turbulenciaSlider = createSlider(0, 1, Config.turbulencia, 0.01);
-    turbulenciaSlider.parent(seccionMovimiento);
+    turbulenciaSlider.parent(seccion);
     turbulenciaSlider.input(() => {
       Config.turbulencia = turbulenciaSlider.value();
       turbulenciaLabel.html('Turbulencia: ' + Config.turbulencia.toFixed(2));
     });
-    
-    // Sección de apariencia
-    let seccionApariencia = createDiv();
-    seccionApariencia.parent(this.controlPanel);
-    seccionApariencia.class('control-section');
-    
-    let aparienciaLabel = createElement('h3', 'Apariencia');
-    aparienciaLabel.parent(seccionApariencia);
+  },
+  
+  // Crear sección plegable para la apariencia
+  _crearSeccionApariencia() {
+    let seccion = this._crearSeccionPlegable('Apariencia');
     
     // Forma de partícula
     let formaLabel = createElement('p', 'Forma:');
-    formaLabel.parent(seccionApariencia);
+    formaLabel.parent(seccion);
     
     let formaSelector = createSelect();
-    formaSelector.parent(seccionApariencia);
+    formaSelector.parent(seccion);
     
     // Usar las formas disponibles desde la configuración
     for (let forma of Config.formasDisponibles) {
@@ -196,17 +256,59 @@ const UI = {
       Config.formaParticula = formaSelector.value();
     });
     
-    // Mostrar rastro
-    let seccionRastro = createDiv();
-    seccionRastro.class('control-section');
-    seccionRastro.parent(this.controlPanel);
+    // Rotación inicial
+    let rotacionInicialLabel = createElement('p', 'Rotación inicial:');
+    rotacionInicialLabel.parent(seccion);
     
-    let rastroTitle = createElement('h3', 'Rastro de Partículas');
-    rastroTitle.parent(seccionRastro);
+    let rotacionInicialSelector = createSelect();
+    rotacionInicialSelector.parent(seccion);
+    
+    // Agregar las opciones de rotación inicial
+    for (let tipo of Config.tiposRotacionInicial) {
+      rotacionInicialSelector.option(tipo);
+    }
+    
+    // Establecer valor actual
+    rotacionInicialSelector.selected(Config.tipoRotacionInicial);
+    
+    // Manejar cambios
+    rotacionInicialSelector.changed(() => {
+      Config.tipoRotacionInicial = rotacionInicialSelector.value();
+      // Reiniciar el sistema para aplicar la nueva rotación inicial
+      ParticleSystem.inicializar();
+    });
+    
+    // Velocidad de rotación
+    let rotacionLabel = createElement('p', 'Velocidad de rotación: ' + Config.rotacionParticula);
+    rotacionLabel.parent(seccion);
+    
+    let rotacionSlider = createSlider(-0.1, 0.1, Config.rotacionParticula, 0.001);
+    rotacionSlider.parent(seccion);
+    rotacionSlider.input(() => {
+      Config.rotacionParticula = rotacionSlider.value();
+      rotacionLabel.html('Velocidad de rotación: ' + Config.rotacionParticula.toFixed(3));
+    });
+    
+    // Color de fondo
+    let fondoLabel = createElement('p', 'Color de fondo:');
+    fondoLabel.parent(seccion);
+    
+    let fondoInput = createInput(Config.colorFondo, 'color');
+    fondoInput.parent(seccion);
+    fondoInput.input(() => {
+      Config.colorFondo = fondoInput.value();
+      background(Config.colorFondo);
+      VisualEffects.reiniciar();
+    });
+  },
+  
+  // Crear sección plegable para el rastro
+  _crearSeccionRastro() {
+    let seccion = this._crearSeccionPlegable('Rastro de Partículas');
     
     let rastroContainer = createDiv();
     rastroContainer.class('control-item');
-    rastroContainer.parent(seccionRastro);
+    rastroContainer.parent(seccion);
     
     let rastroCheck = createCheckbox('Mostrar rastro', Config.mostrarRastro);
     rastroCheck.parent(rastroContainer);
@@ -225,10 +327,10 @@ const UI = {
     
     // Longitud del rastro
     let rastroLengthLabel = createElement('p', 'Longitud del rastro: ' + Config.trailLength);
-    rastroLengthLabel.parent(seccionRastro);
+    rastroLengthLabel.parent(seccion);
     
     let rastroLengthSlider = createSlider(1, 100, Config.trailLength);
-    rastroLengthSlider.parent(seccionRastro);
+    rastroLengthSlider.parent(seccion);
     rastroLengthSlider.input(() => {
       Config.trailLength = rastroLengthSlider.value();
       rastroLengthLabel.html('Longitud del rastro: ' + Config.trailLength);
@@ -241,52 +343,26 @@ const UI = {
     
     // Tamaño final del rastro
     let rastroFinalSizeLabel = createElement('p', 'Tamaño final del rastro: ' + Config.trailFinalSize);
-    rastroFinalSizeLabel.parent(seccionRastro);
+    rastroFinalSizeLabel.parent(seccion);
     
     let rastroFinalSizeSlider = createSlider(0.05, 1, Config.trailFinalSize, 0.01);
-    rastroFinalSizeSlider.parent(seccionRastro);
+    rastroFinalSizeSlider.parent(seccion);
     rastroFinalSizeSlider.input(() => {
       Config.trailFinalSize = rastroFinalSizeSlider.value();
       rastroFinalSizeLabel.html('Tamaño final del rastro: ' + Config.trailFinalSize.toFixed(2));
     });
-    
-    // Rotación
-    let rotacionLabel = createElement('p', 'Rotación: ' + Config.rotacionParticula);
-    rotacionLabel.parent(seccionApariencia);
-    
-    let rotacionSlider = createSlider(0, 0.1, Config.rotacionParticula, 0.001);
-    rotacionSlider.parent(seccionApariencia);
-    rotacionSlider.input(() => {
-      Config.rotacionParticula = rotacionSlider.value();
-      rotacionLabel.html('Rotación: ' + Config.rotacionParticula.toFixed(3));
-    });
-    
-    // Color de fondo
-    let fondoLabel = createElement('p', 'Color de fondo:');
-    fondoLabel.parent(seccionApariencia);
-    
-    let fondoInput = createInput(Config.colorFondo, 'color');
-    fondoInput.parent(seccionApariencia);
-    fondoInput.input(() => {
-      Config.colorFondo = fondoInput.value();
-      background(Config.colorFondo);
-      VisualEffects.reiniciar();
-    });
-    
-    // Sección de efectos
-    let seccionEfectos = createDiv();
-    seccionEfectos.parent(this.controlPanel);
-    seccionEfectos.class('control-section');
-    
-    let efectosLabel = createElement('h3', 'Efectos');
-    efectosLabel.parent(seccionEfectos);
+  },
+  
+  // Crear sección plegable para efectos visuales
+  _crearSeccionEfectos() {
+    let seccion = this._crearSeccionPlegable('Efectos');
     
     // Ruido gráfico
     let ruidoLabel = createElement('p', 'Ruido gráfico: ' + Config.ruidoGrafico);
-    ruidoLabel.parent(seccionEfectos);
+    ruidoLabel.parent(seccion);
     
     let ruidoSlider = createSlider(0, 100, Config.ruidoGrafico);
-    ruidoSlider.parent(seccionEfectos);
+    ruidoSlider.parent(seccion);
     ruidoSlider.input(() => {
       Config.ruidoGrafico = ruidoSlider.value();
       ruidoLabel.html('Ruido gráfico: ' + Config.ruidoGrafico);
@@ -294,25 +370,22 @@ const UI = {
     
     // Desenfoque
     let desenfoqueLabel = createElement('p', 'Desenfoque: ' + Config.desenfoque);
-    desenfoqueLabel.parent(seccionEfectos);
+    desenfoqueLabel.parent(seccion);
     
     let desenfoqueSlider = createSlider(0, 5, Config.desenfoque, 0.1);
-    desenfoqueSlider.parent(seccionEfectos);
+    desenfoqueSlider.parent(seccion);
     desenfoqueSlider.input(() => {
       Config.desenfoque = desenfoqueSlider.value();
       desenfoqueLabel.html('Desenfoque: ' + Config.desenfoque.toFixed(1));
     });
-    
-    // Botón para reiniciar
-    let seccionAcciones = createDiv();
-    seccionAcciones.parent(this.controlPanel);
-    seccionAcciones.class('control-section');
-    
-    let accionesLabel = createElement('h3', 'Acciones');
-    accionesLabel.parent(seccionAcciones);
+  },
+  
+  // Crear sección plegable para acciones
+  _crearSeccionAcciones() {
+    let seccion = this._crearSeccionPlegable('Acciones');
     
     let reiniciarButton = createButton('Reiniciar Partículas');
-    reiniciarButton.parent(seccionAcciones);
+    reiniciarButton.parent(seccion);
     reiniciarButton.mousePressed(() => {
       ParticleSystem.inicializar();
       VisualEffects.reiniciar();
@@ -320,19 +393,158 @@ const UI = {
     });
     
     let guardarButton = createButton('Guardar Imagen');
-    guardarButton.parent(seccionAcciones);
+    guardarButton.parent(seccion);
     guardarButton.mousePressed(() => {
       VisualEffects.guardarImagen();
     });
+  },
+  
+  // Método auxiliar para crear secciones plegables
+  _crearSeccionPlegable(titulo) {
+    console.log(`Creando sección plegable: ${titulo}`);
     
-    let limpiarButton = createButton('Limpiar Canvas');
-    limpiarButton.parent(seccionAcciones);
-    limpiarButton.mousePressed(() => {
-      background(Config.colorFondo);
-      VisualEffects.reiniciar();
+    // Crear contenedor principal
+    let seccion = createDiv();
+    seccion.class('collapsible-section');
+    seccion.parent(this.controlPanel);
+    
+    // Crear encabezado - asegurarse de que sea clicable
+    let header = createDiv();
+    header.class('collapsible-header');
+    header.attribute('role', 'button'); // Semántica ARIA para accesibilidad
+    header.attribute('tabindex', '0');  // Permite foco del teclado
+    header.parent(seccion);
+    
+    // Añadir título
+    let headerTitle = createElement('h3', titulo);
+    headerTitle.parent(header);
+    
+    // Añadir icono para mostrar/ocultar
+    let icon = createSpan('▼');
+    icon.class('collapse-icon');
+    icon.parent(header);
+    
+    // Crear contenido
+    let content = createDiv();
+    content.class('collapsible-content');
+    content.parent(seccion);
+    
+    // Almacenar referencia para poder acceder desde JavaScript
+    seccion.elt.setAttribute('data-title', titulo);
+    
+    return content;
+  },
+  
+  // Inicializar comportamiento de las secciones plegables
+  _inicializarSeccionesPlegables() {
+    console.log("Inicializando comportamiento de secciones plegables");
+    
+    // Usar selectAll para obtener todos los headers
+    const headers = selectAll('.collapsible-header');
+    console.log(`Encontrados ${headers.length} headers de secciones plegables`);
+    
+    // Iterar sobre cada header y asignar el manejador de eventos de forma explícita
+    headers.forEach(header => {
+      header.elt.addEventListener('click', function() {
+        // Usar la propiedad parentElement del elemento DOM
+        const section = this.parentElement;
+        
+        // Alternar la clase 'active' para mostrar/ocultar el contenido
+        if (section.classList.contains('active')) {
+          section.classList.remove('active');
+          console.log(`Sección plegada: ${section.getAttribute('data-title')}`);
+        } else {
+          section.classList.add('active');
+          console.log(`Sección desplegada: ${section.getAttribute('data-title')}`);
+        }
+      });
     });
     
-    console.log("Panel de control creado");
+    // Para depuración - registrar todos los títulos de secciones
+    headers.forEach(header => {
+      const title = header.elt.getElementsByTagName('h3')[0]?.innerText || 'Sin título';
+      console.log(`Configurado header: ${title}`);
+    });
+  },
+  
+  // Función auxiliar para crear un control de color
+  _crearControlColor(contenedor, nombre, indice) {
+    let colorContainer = createDiv();
+    colorContainer.class('color-picker-container');
+    colorContainer.parent(contenedor);
+    
+    let label = createElement('label', nombre);
+    label.class('color-picker-label');
+    label.parent(colorContainer);
+    
+    // Previsualización del color actual
+    let preview = createDiv();
+    preview.class('color-preview');
+    preview.id(`color-preview-${indice}`);
+    preview.parent(colorContainer);
+    
+    // Asegurar que la paleta tenga colores antes de inicializar
+    if (Config.paletaColores.length === 0) {
+      ColorUtils.inicializarPaleta();
+    }
+    
+    // Obtener el color actual para este índice
+    const colorActual = Config.paletaColores[indice] || color(255, 255, 255);
+    
+    // Input de selección de color
+    let colorPicker = createColorPicker(colorActual);
+    colorPicker.id(`color-picker-${indice}`);
+    colorPicker.parent(colorContainer);
+    colorPicker.style('width', '100%');
+    
+    // Establecer el color inicial en la previsualización
+    preview.style('background-color', colorActual.toString());
+    
+    // Manejar cambios en el color
+    colorPicker.input(() => {
+      // Obtener el color seleccionado como string para evitar problemas con el tipo
+      const nuevoColor = colorPicker.value();
+      console.log(`Cambiando color ${indice} a: ${nuevoColor}`);
+      
+      // Actualizar la paleta
+      ColorUtils.actualizarColor(indice, color(nuevoColor));
+      
+      // Actualizar la previsualización
+      preview.style('background-color', nuevoColor);
+      
+      // Actualizar todas las partículas existentes con los nuevos colores
+      for (let p of ParticleSystem.particulas) {
+        // Asignar colores de la paleta actualizada
+        p.color = ColorUtils.obtenerColorAleatorio();
+      }
+    });
+    
+    // Añadir a una lista para actualizarlos más tarde
+    if (!this.colorPickers) this.colorPickers = [];
+    this.colorPickers.push({ picker: colorPicker, preview: preview, index: indice });
+  },
+  
+  // Función para actualizar los controles de color con los valores actuales
+  _actualizarControlesColor() {
+    if (!this.colorPickers) return;
+    
+    // Asegurar que la paleta tenga colores antes de actualizar
+    if (Config.paletaColores.length === 0) {
+      ColorUtils.inicializarPaleta();
+    }
+    
+    console.log("Actualizando controles de color. Paleta actual:", Config.paletaColores.length, "colores");
+    
+    for (let control of this.colorPickers) {
+      if (Config.paletaColores.length > control.index) {
+        const colorActual = Config.paletaColores[control.index];
+        console.log(`Actualizando picker ${control.index} con color: ${colorActual.toString()}`);
+        
+        // Actualizar picker y preview
+        control.picker.value(colorActual.toString());
+        control.preview.style('background-color', colorActual.toString());
+      }
+    }
   },
   
   toggleVisibilidad() {
@@ -344,6 +556,28 @@ const UI = {
       } else {
         controles.style('display', 'none');
       }
+    }
+  },
+  
+  // Función para alternar la visibilidad del popup de ayuda
+  toggleHelpPopup() {
+    const helpPopup = document.getElementById('help-popup');
+    helpPopup.classList.toggle('visible');
+  },
+  
+  // Función para guardar la imagen del canvas
+  guardarImagen() {
+    console.log("Guardando imagen...");
+    saveCanvas('pattern-animator', 'png');
+  },
+  
+  // Función para activar pantalla completa
+  toggleFullscreen() {
+    console.log("Alternando pantalla completa");
+    if (!fullscreen()) {
+      fullscreen(true);
+    } else {
+      fullscreen(false);
     }
   }
 }; 

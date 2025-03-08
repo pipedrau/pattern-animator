@@ -118,9 +118,12 @@ function touchStarted() {
 
 // Ajustar el tamaño del canvas cuando cambia el tamaño de la ventana
 function windowResized() {
-  // En lugar de ajustar automáticamente al tamaño de la ventana,
-  // mantenemos las dimensiones configuradas
-  resizeCanvas(Config.canvasWidth, Config.canvasHeight);
+  // Actualizar las dimensiones en la configuración
+  Config.canvasWidth = windowWidth;
+  Config.canvasHeight = windowHeight;
+  
+  // Ajustar el canvas al nuevo tamaño de la ventana
+  resizeCanvas(windowWidth, windowHeight);
   
   // Reinicializar efectos visuales
   VisualEffects.inicializar(width, height);
@@ -129,4 +132,6 @@ function windowResized() {
   let dimensiones = FlowField.inicializar(width, height, Config.escala);
   cols = dimensiones.cols;
   rows = dimensiones.rows;
+  
+  console.log(`Canvas redimensionado a ${width}x${height} (tamaño de ventana)`);
 } 

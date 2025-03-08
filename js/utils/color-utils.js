@@ -7,16 +7,22 @@ const ColorUtils = {
     console.log("Inicializando paleta de colores");
     Config.paletaColores = [];
     
-    // Colores vibrantes para mejor visibilidad
-    Config.paletaColores.push(color(255, 0, 0));     // Rojo
-    Config.paletaColores.push(color(0, 255, 0));     // Verde
-    Config.paletaColores.push(color(0, 0, 255));     // Azul
-    Config.paletaColores.push(color(255, 255, 0));   // Amarillo
-    Config.paletaColores.push(color(0, 255, 255));   // Cian
-    Config.paletaColores.push(color(255, 0, 255));   // Magenta
-    Config.paletaColores.push(color(255, 128, 0));   // Naranja
-    Config.paletaColores.push(color(128, 0, 255));   // Púrpura
-    Config.paletaColores.push(color(0, 255, 128));   // Verde menta
+    // Colores de la paleta solicitada
+    Config.paletaColores.push(color(4, 80, 242));    // Azul eléctrico - #0551F2
+    Config.paletaColores.push(color(0, 20, 63));     // Azul oscuro - #00143F
+    Config.paletaColores.push(color(4, 110, 242));   // Azul medio - #046EF3
+    Config.paletaColores.push(color(2, 128, 242));   // Azul claro - #0381F3
+    Config.paletaColores.push(color(11, 239, 223));  // Cyan - #0CF0DF
+    
+    // Variaciones para más diversidad
+    Config.paletaColores.push(color(4, 80, 242, 180));    // Azul eléctrico con transparencia
+    Config.paletaColores.push(color(0, 20, 63, 200));     // Azul oscuro con transparencia
+    Config.paletaColores.push(color(4, 110, 242, 160));   // Azul medio con transparencia
+    Config.paletaColores.push(color(2, 128, 242, 140));   // Azul claro con transparencia
+    Config.paletaColores.push(color(11, 239, 223, 120));  // Cyan con transparencia
+    
+    // Aseguramos que la paleta está disponible globalmente
+    window.paletaColores = Config.paletaColores;
     
     console.log("Paleta inicializada con", Config.paletaColores.length, "colores");
   },
@@ -47,5 +53,42 @@ const ColorUtils = {
       resultado.push(color(r, g, b));
     }
     return resultado;
+  },
+  
+  // Actualizar un color específico de la paleta
+  actualizarColor(indice, nuevoColor) {
+    if (indice >= 0 && indice < Config.paletaColores.length) {
+      // Intentamos convertir a un objeto color válido en caso de recibir un string
+      let colorObj = nuevoColor;
+      if (typeof nuevoColor === 'string') {
+        colorObj = color(nuevoColor);
+      }
+      
+      console.log(`ColorUtils: Actualizando color ${indice} a: ${colorObj.toString()}`);
+      
+      // Asignar el nuevo color
+      Config.paletaColores[indice] = colorObj;
+      
+      // Actualizamos también las versiones con transparencia si corresponde
+      if (indice < 5) {
+        // Calculamos la transparencia adecuada
+        const transparencia = [180, 200, 160, 140, 120][indice];
+        Config.paletaColores[indice + 5] = color(
+          red(colorObj), 
+          green(colorObj), 
+          blue(colorObj), 
+          transparencia
+        );
+      }
+      
+      // Actualizar la variable global
+      window.paletaColores = Config.paletaColores;
+      
+      console.log(`ColorUtils: Paleta actualizada, ahora tiene ${Config.paletaColores.length} colores`);
+      return true;
+    } else {
+      console.warn(`ColorUtils: Índice de color inválido: ${indice}`);
+      return false;
+    }
   }
 }; 

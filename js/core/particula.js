@@ -11,7 +11,10 @@ class Particula {
     this.size = Config.tamanoParticula;
     this.historia = [];
     this.maxHistory = Config.trailLength;
-    this.rotacion = random(TWO_PI);
+    
+    // Inicializar rotación según el tipo seleccionado
+    this.rotacion = this._inicializarRotacion();
+    
     this.lastPos = null; // Guardamos la última posición válida
     
     // Propiedades de color
@@ -22,6 +25,38 @@ class Particula {
     this.formaIrregular = [];
     for (let i = 0; i < 5; i++) {
       this.formaIrregular.push(createVector(random(-this.size / 2, this.size / 2), random(-this.size / 2, this.size / 2)));
+    }
+  }
+  
+  // Método para inicializar la rotación según el tipo seleccionado
+  _inicializarRotacion() {
+    switch (Config.tipoRotacionInicial) {
+      case 'Aleatoria':
+        return random(TWO_PI);
+        
+      case 'Uniforme 0°':
+        return 0;
+        
+      case 'Uniforme 30°':
+        return PI / 6; // 30 grados en radianes
+        
+      case 'Uniforme 45°':
+        return PI / 4; // 45 grados en radianes
+        
+      case 'Uniforme 60°':
+        return PI / 3; // 60 grados en radianes
+        
+      case 'Uniforme 90°':
+        return PI / 2; // 90 grados en radianes
+        
+      case 'Contraria':
+        // Mitad de las partículas en una dirección, mitad en la contraria
+        // Usamos el índice de partícula para determinar la dirección
+        // Como no tenemos acceso al índice, usamos un valor aleatorio
+        return random() > 0.5 ? 0 : PI;
+        
+      default:
+        return random(TWO_PI);
     }
   }
 

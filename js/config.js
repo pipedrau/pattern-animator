@@ -4,14 +4,29 @@
  */
 const Config = {
   // Configuración del canvas
-  canvasWidth: 800,
-  canvasHeight: 600,
+  canvasWidth: window.innerWidth,
+  canvasHeight: window.innerHeight,
   
   // Configuración de partículas
   cantidadParticulas: 200,
   tamanoParticula: 8,
   velocidadMaxima: 4,
   turbulencia: 0,
+  
+  // Patrones iniciales para partículas
+  patronInicial: 'Cuadrícula',
+  patronesDisponibles: [
+    'Aleatorio', 
+    'Cuadrícula', 
+    'Círculo', 
+    'Espiral', 
+    'Líneas', 
+    'Estrella', 
+    'Anillos', 
+    'Hexágonos', 
+    'Ondas', 
+    'Diagonal'
+  ],
   
   // Configuración de visualización
   colorFondo: '#000000',
@@ -22,6 +37,18 @@ const Config = {
   trailFinalSize: 1, // Tamaño final del rastro (proporción del tamaño original)
   formaParticula: 'Círculo',
   rotacionParticula: 0,
+  
+  // Configuración de rotación inicial
+  tipoRotacionInicial: 'Aleatoria',
+  tiposRotacionInicial: [
+    'Aleatoria',
+    'Uniforme 0°',
+    'Uniforme 30°',
+    'Uniforme 45°',
+    'Uniforme 60°',
+    'Uniforme 90°',
+    'Contraria'
+  ],
   
   // Opciones de forma
   formasDisponibles: [
@@ -39,7 +66,7 @@ const Config = {
   ],
   
   // Configuración de movimiento
-  modoMovimiento: 'Flujo de Campo',
+  modoMovimiento: 'Mover Derecha',
   modosDisponibles: [
     'Flujo de Campo',
     'Movimiento Aleatorio',
