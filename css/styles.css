@@ -327,4 +327,84 @@ input[type="checkbox"] {
   0% { box-shadow: 0 0 0 0 rgba(12, 240, 223, 0.4); }
   70% { box-shadow: 0 0 0 10px rgba(12, 240, 223, 0); }
   100% { box-shadow: 0 0 0 0 rgba(12, 240, 223, 0); }
+}
+
+/* Popup de bienvenida */
+#welcome-popup {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.35);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  opacity: 0;
+  transform: scale(0.95);
+  animation: fadeInPopup 0.5s forwards;
+}
+
+@keyframes fadeInPopup {
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+#welcome-popup.hidden {
+  animation: fadeOutPopup 0.4s forwards;
+}
+
+@keyframes fadeOutPopup {
+  to {
+    opacity: 0;
+    transform: scale(0.95);
+    visibility: hidden;
+  }
+}
+
+.popup-content {
+  position: relative;
+  max-width: 40%;
+  max-height: 40%;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 5px 30px rgba(0, 0, 0, 0.5);
+}
+
+.popup-content img {
+  display: block;
+  max-width: 100%;
+  max-height: 40vh;
+  object-fit: contain;
+}
+
+.popup-close {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  width: 32px;
+  height: 32px;
+  background-color: rgba(0, 0, 0, 0.6);
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  color: white;
+  z-index: 1001;
+  transition: all 0.2s ease;
+}
+
+.popup-close:hover {
+  background-color: rgba(224, 64, 64, 0.8);
+  transform: scale(1.1);
+}
+
+/* Botón de acción para toggle de clic de mouse */
+.action-button.active {
+  background-color: #5e72e4;
+  color: white;
 } 

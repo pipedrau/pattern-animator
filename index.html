@@ -42,6 +42,16 @@
   <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
+  <!-- Popup de bienvenida -->
+  <div id="welcome-popup">
+    <div class="popup-content">
+      <div class="popup-close" onclick="UI.closeWelcomePopup()">
+        <span class="material-icons">close</span>
+      </div>
+      <img src="img/preview.webp" alt="Pattern Animator Preview">
+    </div>
+  </div>
+
   <!-- Botón de ayuda -->
   <div id="help-toggle" onclick="UI.toggleHelpPopup()">
     <span class="material-icons">help</span>
@@ -69,6 +79,9 @@
     </div>
     <div class="action-button" onclick="ParticleSystem.inicializar()" title="Reiniciar Partículas">
       <span class="material-icons">refresh</span>
+    </div>
+    <div class="action-button" onclick="UI.toggleAddParticleOnClick()" title="Activar/Desactivar Añadir Partículas con Clic">
+      <span class="material-icons">touch_app</span>
     </div>
   </div>
   

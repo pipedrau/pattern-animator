@@ -4,6 +4,7 @@
  */
 const UI = {
   controlPanel: null,
+  addParticleOnClickEnabled: true, // Por defecto está habilitado
   
   crearControles() {
     console.log("Creando panel de control");
@@ -579,5 +580,53 @@ const UI = {
     } else {
       fullscreen(false);
     }
+  },
+  
+  // Función para cerrar el popup de bienvenida
+  closeWelcomePopup() {
+    console.log("Cerrando popup de bienvenida");
+    const welcomePopup = document.getElementById('welcome-popup');
+    welcomePopup.classList.add('hidden');
+    
+    // Eliminar el popup del DOM después de la animación
+    setTimeout(() => {
+      if (welcomePopup && welcomePopup.parentNode) {
+        welcomePopup.parentNode.removeChild(welcomePopup);
+      }
+    }, 500); // Tiempo suficiente para que termine la animación
+  },
+  
+  // Función para verificar si debemos mostrar el popup de bienvenida
+  checkWelcomePopup() {
+    console.log("Verificando si se debe mostrar el popup de bienvenida");
+    const welcomePopup = document.getElementById('welcome-popup');
+    
+    // Siempre mostrar el popup al recargar la página
+    if (welcomePopup) {
+      console.log("Mostrando popup de bienvenida");
+      // El popup ya está visible por defecto
+    }
+  },
+  
+  // Función para alternar la función de añadir partículas al hacer clic
+  toggleAddParticleOnClick() {
+    this.addParticleOnClickEnabled = !this.addParticleOnClickEnabled;
+    
+    // Actualizar la apariencia del botón
+    const btnElement = document.querySelector('.action-button[title*="Partículas con Clic"]');
+    if (btnElement) {
+      if (this.addParticleOnClickEnabled) {
+        btnElement.classList.add('active');
+      } else {
+        btnElement.classList.remove('active');
+      }
+    }
+    
+    console.log(`Añadir partículas con clic: ${this.addParticleOnClickEnabled ? 'Activado' : 'Desactivado'}`);
+  },
+  
+  // Método para verificar si está habilitada la creación de partículas con clic
+  shouldAddParticleOnClick() {
+    return this.addParticleOnClickEnabled;
   }
 }; 

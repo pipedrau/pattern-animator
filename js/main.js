@@ -23,6 +23,15 @@ function setup() {
   ParticleSystem.inicializar();
   UI.crearControles();
   
+  // Verificar si se debe mostrar el popup de bienvenida
+  UI.checkWelcomePopup();
+  
+  // Activar por defecto el botón de añadir partículas con clic
+  const btnElement = document.querySelector('.action-button[title*="Partículas con Clic"]');
+  if (btnElement) {
+    btnElement.classList.add('active');
+  }
+  
   console.log("Setup completado");
 }
 
@@ -96,15 +105,16 @@ function keyPressed() {
 
 // Eventos de mouse para interacción
 function mousePressed() {
-  // Agregar partícula donde hace clic el usuario
-  if (mouseX > 0 && mouseY > 0 && mouseX < width && mouseY < height) {
+  // Solo agregar partícula si la opción está habilitada
+  if (UI.shouldAddParticleOnClick() && mouseX > 0 && mouseY > 0 && mouseX < width && mouseY < height) {
     ParticleSystem.agregarParticula(mouseX, mouseY);
   }
 }
 
 // Evento para pantalla táctil en móviles
 function touchStarted() {
-  if (touches.length > 0) {
+  // Solo agregar partícula si la opción está habilitada
+  if (UI.shouldAddParticleOnClick() && touches.length > 0) {
     for (let touch of touches) {
       if (touch.x > 0 && touch.y > 0 && touch.x < width && touch.y < height) {
         ParticleSystem.agregarParticula(touch.x, touch.y);
