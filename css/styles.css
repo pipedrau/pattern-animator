@@ -72,7 +72,7 @@ h3 {
 }
 
 .collapsible-header {
-  background-color: rgba(61, 82, 74, 0.6);
+  background-color: rgba(19, 218, 142, 0.523);
   color: white;
   padding: 10px 15px;
   border-radius: 6px;
@@ -430,6 +430,9 @@ input[type="checkbox"] {
 /* Estilos para colores recientes */
 .colores-recientes-container {
   margin: 15px 0;
+  padding: 10px;
+  background-color: rgba(255, 255, 255, 0.05);
+  border-radius: 6px;
 }
 
 .colores-recientes-grid {
@@ -446,9 +449,27 @@ input[type="checkbox"] {
   cursor: pointer;
   border: 1px solid rgba(255, 255, 255, 0.2);
   transition: all 0.2s ease;
+  position: relative;
 }
 
 .color-reciente:hover {
   transform: scale(1.1);
-  box-shadow: 0 0 8px rgba(255, 255, 255, 0.3);
+  box-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
+}
+
+.color-reciente:before {
+  content: "";
+  position: absolute;
+  top: -4px;
+  left: -4px;
+  right: -4px;
+  bottom: -4px;
+  border-radius: 6px;
+  border: 2px solid transparent;
+  transition: all 0.2s ease;
+  pointer-events: none;
+}
+
+.color-reciente:hover:before {
+  border-color: rgba(255, 255, 255, 0.3);
 } 

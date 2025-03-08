@@ -257,8 +257,13 @@ const UI = {
         if (window.coloresRecientes && window.coloresRecientes[i]) {
           const colorSeleccionado = window.selectedColorIndex || 0;
           if (this.colorPickers && this.colorPickers[colorSeleccionado]) {
-            this.colorPickers[colorSeleccionado].picker.value(window.coloresRecientes[i]);
-            this._actualizarColorEnPaleta(colorSeleccionado, window.coloresRecientes[i]);
+            // No guardar este color como reciente (ya está en recientes)
+            // Solo moverlo al principio de la lista
+            const colorReciente = window.coloresRecientes[i];
+            this._actualizarColorEnPaleta(colorSeleccionado, colorReciente, false);
+            
+            // Pero sí reordenar los colores recientes para que el usado quede primero
+            this._guardarColorReciente(colorReciente);
           }
         }
       });
@@ -586,7 +591,8 @@ const UI = {
       const nuevoColor = colorPicker.value();
       
       // Usar el método centralizado para actualizar el color
-      this._actualizarColorEnPaleta(indice, nuevoColor);
+      // Pasar true para guardar como reciente (acción directa del usuario)
+      this._actualizarColorEnPaleta(indice, nuevoColor, true);
     });
     
     // Añadir a una lista para actualizarlos más tarde
@@ -610,7 +616,7 @@ const UI = {
         const colorActual = Config.paletaColores[control.index];
         console.log(`Actualizando picker ${control.index} con color: ${colorActual.toString()}`);
         
-        // Actualizar picker y preview
+        // Actualizar picker y preview sin guardar como reciente (actualización programática)
         control.picker.value(colorActual.toString());
         control.preview.style('background-color', colorActual.toString());
       }
@@ -874,14 +880,14 @@ const UI = {
     if (existe !== -1) {
       // Si el color ya existe, moverlo al principio (sin duplicar)
       window.coloresRecientes.splice(existe, 1);
-      window.coloresRecientes.unshift(nuevoColor);
-    } else {
-      // Añadir al principio 
-      window.coloresRecientes.unshift(nuevoColor);
-      // Mantener solo los 5 más recientes
-      if (window.coloresRecientes.length > 5) {
-        window.coloresRecientes = window.coloresRecientes.slice(0, 5);
-      }
+    }
+    
+    // Añadir al principio 
+    window.coloresRecientes.unshift(nuevoColor);
+    
+    // Mantener solo los 5 más recientes
+    if (window.coloresRecientes.length > 5) {
+      window.coloresRecientes = window.coloresRecientes.slice(0, 5);
     }
     
     // Guardar en localStorage para persistencia
@@ -914,7 +920,7 @@ const UI = {
   },
   
   // Método para actualizar el color en la paleta
-  _actualizarColorEnPaleta(indice, nuevoColor) {
+  _actualizarColorEnPaleta(indice, nuevoColor, guardarComoReciente = true) {
     console.log(`Actualizando color ${indice} a: ${nuevoColor}`);
     
     // Actualizar la visualización del color
@@ -925,8 +931,11 @@ const UI = {
     // Actualizar la paleta usando ColorUtils
     ColorUtils.actualizarColor(indice, color(nuevoColor));
     
-    // Guardar en colores recientes
-    this._guardarColorReciente(nuevoColor);
+    // Guardar en colores recientes SOLO si se solicitó específicamente
+    // (cuando el usuario elige un color manualmente)
+    if (guardarComoReciente) {
+      this._guardarColorReciente(nuevoColor);
+    }
     
     // Actualizar todas las partículas existentes con los nuevos colores
     for (let p of ParticleSystem.particulas) {
