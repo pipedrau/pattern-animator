@@ -6,14 +6,12 @@ const UI = {
   controlPanel: null,
   addParticleOnClickEnabled: true, // Por defecto está habilitado
   grabacionDuracion: 5, // Duración de la grabación en segundos (por defecto 5s)
-  grabacionFormato: 'mp4', // Formato de grabación (por defecto mp4)
+  grabacionFormato: 'webm', // Formato de grabación (siempre WebM por ahora)
   mediaRecorder: null, // Instancia del MediaRecorder
   grabacionEnProgreso: false, // Indica si hay una grabación en progreso
   grabacionTiempoInicio: 0, // Tiempo de inicio de la grabación
   grabacionChunks: [], // Fragmentos de la grabación
   grabacionTemporizador: null, // Temporizador para actualizar el tiempo de grabación
-  ffmpegLoaded: false, // Indicador de si FFmpeg está cargado
-  ffmpeg: null, // Instancia de FFmpeg
   
   crearControles() {
     console.log("Creando panel de control");
@@ -1366,99 +1364,25 @@ const UI = {
     console.log(`Duración de grabación ajustada a ${duracion}s`);
   },
   
-  // Inicializar FFmpeg
-  async _inicializarFFmpeg() {
-    if (this.ffmpegLoaded) {
+  // Seleccionar formato de video (por ahora siempre es WebM)
+  seleccionarFormato(formato) {
+    if (formato !== 'webm') {
+      console.log('Solo se soporta formato WebM por ahora');
       return;
     }
     
-    try {
-      // Mostrar indicador de carga
-      const loading = document.getElementById('loading-indicator');
-      loading.style.display = 'flex';
-      
-      // Crear instancia de FFmpeg
-      this.ffmpeg = createFFmpeg({ log: false });
-      
-      // Cargar FFmpeg (esto puede tomar tiempo)
-      await this.ffmpeg.load();
-      this.ffmpegLoaded = true;
-      
-      console.log('FFmpeg cargado correctamente');
-      
-      // Ocultar indicador de carga
-      loading.style.display = 'none';
-    } catch (error) {
-      console.error('Error al cargar FFmpeg:', error);
-      alert('No se pudo inicializar el conversor de video. Intenta nuevamente o usa formato WebM.');
-      
-      // Ocultar indicador de carga
-      const loading = document.getElementById('loading-indicator');
-      loading.style.display = 'none';
-    }
-  },
-  
-  // Convertir WebM a MP4
-  async _convertirAMP4(webmBlob) {
-    // Si FFmpeg no está cargado, intentar cargarlo
-    if (!this.ffmpegLoaded) {
-      await this._inicializarFFmpeg();
-      
-      // Si sigue sin cargarse, descargar como WebM
-      if (!this.ffmpegLoaded) {
-        console.warn('FFmpeg no está disponible, descargando WebM como alternativa');
-        this._descargarVideo(webmBlob, 'webm');
-        return;
-      }
-    }
+    this.grabacionFormato = formato;
     
-    try {
-      // Mostrar indicador de carga para la conversión
-      const loading = document.getElementById('loading-indicator');
-      const loadingText = loading.querySelector('p');
-      loadingText.textContent = 'Convirtiendo video...';
-      loading.style.display = 'flex';
-      
-      console.log('Iniciando conversión a MP4...');
-      
-      // Convertir Blob a ArrayBuffer
-      const arrayBuffer = await webmBlob.arrayBuffer();
-      const inputData = new Uint8Array(arrayBuffer);
-      
-      // Cargar el archivo WebM en FFmpeg
-      this.ffmpeg.FS('writeFile', 'input.webm', inputData);
-      
-      // Realizar la conversión con buena calidad pero tamaño razonable
-      await this.ffmpeg.run('-i', 'input.webm', '-c:v', 'libx264', '-preset', 'fast', '-crf', '22', '-pix_fmt', 'yuv420p', 'output.mp4');
-      
-      // Leer el archivo MP4 resultante
-      const mp4Data = this.ffmpeg.FS('readFile', 'output.mp4');
-      
-      // Convertir a Blob y descargar
-      const mp4Blob = new Blob([mp4Data.buffer], { type: 'video/mp4' });
-      this._descargarVideo(mp4Blob, 'mp4');
-      
-      // Limpiar archivos y memoria
-      this.ffmpeg.FS('unlink', 'input.webm');
-      this.ffmpeg.FS('unlink', 'output.mp4');
-      
-      console.log('Conversión a MP4 completada');
-      
-      // Ocultar indicador de carga
-      loading.style.display = 'none';
-      loadingText.textContent = 'Cargando...';
-      
-    } catch (error) {
-      console.error('Error al convertir a MP4:', error);
-      alert('Error al convertir el video. Se descargará en formato WebM.');
-      this._descargarVideo(webmBlob, 'webm');
-      
-      // Ocultar indicador de carga
-      const loading = document.getElementById('loading-indicator');
-      loading.style.display = 'none';
-      const loadingText = loading.querySelector('p');
-      loadingText.textContent = 'Cargando...';
-    }
+    // Actualizar botones
+    const botones = document.querySelectorAll('.formato-btn:not(.disabled)');
+    botones.forEach(btn => {
+      btn.classList.remove('active');
+      if (btn.dataset.formato === formato) {
+        btn.classList.add('active');
+      }
+    });
+    
+    console.log(`Formato de video ajustado a ${formato}`);
   },
   
   // Descargar video (función helper)
@@ -1479,52 +1403,40 @@ const UI = {
     }, 100);
   },
   
-  // Seleccionar formato de video
-  seleccionarFormato(formato) {
-    this.grabacionFormato = formato;
-    
-    // Actualizar botones
-    const botones = document.querySelectorAll('.formato-btn');
-    botones.forEach(btn => {
-      btn.classList.remove('active');
-      if (btn.dataset.formato === formato) {
-        btn.classList.add('active');
-      }
-    });
-    
-    console.log(`Formato de video ajustado a ${formato}`);
-    
-    // Si es MP4, precargar FFmpeg para que esté listo
-    if (formato === 'mp4' && !this.ffmpegLoaded) {
-      this._inicializarFFmpeg().catch(err => {
-        console.warn('No se pudo precargar FFmpeg:', err);
-      });
-    }
-  },
-  
-  // Procesar video grabado
-  async _procesarVideo(blob) {
-    console.log(`Procesando video en formato ${this.grabacionFormato}`);
+  // Procesar video grabado (simplificado a solo WebM)
+  _procesarVideo(blob) {
+    console.log(`Procesando video WebM`);
     
     try {
-      // Si se seleccionó WebM, descargar directamente
-      if (this.grabacionFormato === 'webm') {
-        this._descargarVideo(blob, 'webm');
-        return;
-      }
+      // Mostrar un breve mensaje de procesamiento
+      const loading = document.getElementById('loading-indicator');
+      const loadingText = loading.querySelector('p');
+      loadingText.textContent = 'Procesando video...';
+      loading.style.display = 'flex';
       
-      // Si se seleccionó MP4, convertir (y NO descargar el WebM)
-      if (this.grabacionFormato === 'mp4') {
-        await this._convertirAMP4(blob);
-      }
+      // Pequeña pausa para mostrar el mensaje
+      setTimeout(() => {
+        // Descargar el video WebM
+        this._descargarVideo(blob, 'webm');
+        
+        // Ocultar indicador
+        loading.style.display = 'none';
+        loadingText.textContent = 'Cargando...';
+      }, 300);
+      
     } catch (error) {
       console.error('Error al procesar el video:', error);
-      // Si hay algún error, intentamos descargar en WebM como fallback
-      this._descargarVideo(blob, 'webm');
+      alert('Hubo un problema al procesar el video. Inténtalo de nuevo.');
+      
+      // Ocultar indicador
+      const loading = document.getElementById('loading-indicator');
+      loading.style.display = 'none';
+      const loadingText = loading.querySelector('p');
+      loadingText.textContent = 'Cargando...';
     }
   },
   
-  // Modificar el método iniciarGrabacion para procesar según formato
+  // Iniciar grabación del canvas
   iniciarGrabacion() {
     if (this.grabacionEnProgreso) {
       console.log('Ya hay una grabación en progreso');
@@ -1538,7 +1450,7 @@ const UI = {
     }
     
     try {
-      console.log(`Iniciando grabación de ${this.grabacionDuracion} segundos en formato ${this.grabacionFormato}...`);
+      console.log(`Iniciando grabación de ${this.grabacionDuracion} segundos en formato WebM...`);
       
       // Obtener el canvas
       const canvas = document.querySelector('canvas');
@@ -1547,38 +1459,51 @@ const UI = {
         return;
       }
       
-      // Precargar FFmpeg si es necesario
-      if (this.grabacionFormato === 'mp4' && !this.ffmpegLoaded) {
-        this._inicializarFFmpeg().catch(err => console.warn('FFmpeg no pudo cargarse:', err));
-      }
-      
-      // Configurar la calidad del video (60fps es un buen balance entre calidad y rendimiento)
+      // Configurar la calidad del video
       const stream = canvas.captureStream(60);
       this.grabacionChunks = [];
       
-      // Configurar el MediaRecorder con opciones optimizadas para calidad alta
-      const opciones = { 
-        mimeType: 'video/webm;codecs=vp9', 
-        videoBitsPerSecond: 8000000 // Aumentar la calidad para mejor conversión posterior
-      };
+      // Configurar el MediaRecorder con opciones optimizadas
+      let opciones = {};
       
-      // Intentar crear el MediaRecorder con las opciones preferidas
+      // Intentar usar el códec más eficiente disponible
       try {
-        this.mediaRecorder = new MediaRecorder(stream, opciones);
-      } catch (e) {
-        console.warn('El formato VP9 no es soportado, intentando con VP8:', e);
-        
-        // Intentar con formato alternativo si VP9 no es soportado
-        try {
-          this.mediaRecorder = new MediaRecorder(stream, { 
+        if (MediaRecorder.isTypeSupported('video/webm;codecs=vp9')) {
+          console.log('Usando códec VP9');
+          opciones = { 
+            mimeType: 'video/webm;codecs=vp9', 
+            videoBitsPerSecond: 8000000 
+          };
+        } else if (MediaRecorder.isTypeSupported('video/webm;codecs=vp8')) {
+          console.log('Usando códec VP8');
+          opciones = { 
             mimeType: 'video/webm;codecs=vp8',
             videoBitsPerSecond: 8000000
-          });
-        } catch (e) {
-          console.warn('El formato VP8 no es soportado, usando el formato por defecto:', e);
-          this.mediaRecorder = new MediaRecorder(stream);
+          };
+        } else {
+          console.log('Usando códec por defecto');
         }
+        
+        this.mediaRecorder = new MediaRecorder(stream, opciones);
+      } catch (e) {
+        console.warn('Error al configurar el codec:', e);
+        this.mediaRecorder = new MediaRecorder(stream);
       }
+      
+      // Mostrar indicador de grabación
+      const indicador = document.getElementById('grabacion-indicador');
+      indicador.classList.add('visible');
+      
+      // Cambiar texto del botón
+      const btnGrabar = document.getElementById('iniciar-grabacion');
+      btnGrabar.textContent = 'Grabando...';
+      btnGrabar.classList.add('grabando');
+      
+      // Iniciar temporizador para actualizar tiempo
+      this.grabacionEnProgreso = true;
+      this.grabacionTiempoInicio = Date.now();
+      this.actualizarTiempoGrabacion();
+      this.grabacionTemporizador = setInterval(() => this.actualizarTiempoGrabacion(), 1000);
       
       // Eventos del MediaRecorder
       this.mediaRecorder.ondataavailable = (e) => {
@@ -1590,9 +1515,10 @@ const UI = {
       this.mediaRecorder.onstop = async () => {
         // Crear blob con todos los fragmentos
         const blob = new Blob(this.grabacionChunks, { type: 'video/webm' });
+        console.log(`Video WebM grabado: ${(blob.size / 1024 / 1024).toFixed(2)} MB`);
         
-        // Procesar según formato seleccionado
-        await this._procesarVideo(blob);
+        // Procesar el video
+        this._procesarVideo(blob);
         
         // Restablecer estado
         this.grabacionEnProgreso = false;
@@ -1609,25 +1535,10 @@ const UI = {
         console.log('Grabación finalizada');
       };
       
-      // Iniciar grabación
+      // Configurar la duración de grabación y programar detención automática
       this.mediaRecorder.start();
-      this.grabacionEnProgreso = true;
-      this.grabacionTiempoInicio = Date.now();
+      console.log('MediaRecorder iniciado correctamente');
       
-      // Mostrar indicador de grabación
-      const indicador = document.getElementById('grabacion-indicador');
-      indicador.classList.add('visible');
-      
-      // Cambiar texto del botón
-      const btnGrabar = document.getElementById('iniciar-grabacion');
-      btnGrabar.textContent = 'Grabando...';
-      btnGrabar.classList.add('grabando');
-      
-      // Iniciar temporizador para actualizar tiempo
-      this.actualizarTiempoGrabacion();
-      this.grabacionTemporizador = setInterval(() => this.actualizarTiempoGrabacion(), 1000);
-      
-      // Programar detención automática
       setTimeout(() => {
         if (this.grabacionEnProgreso) {
           this.detenerGrabacion();
@@ -1636,6 +1547,7 @@ const UI = {
       
     } catch (error) {
       console.error('Error al iniciar la grabación:', error);
+      console.error('Stack trace:', error.stack);
       alert(`Error al iniciar la grabación: ${error.message}`);
     }
   },
