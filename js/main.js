@@ -62,7 +62,12 @@ function draw() {
     // 5. Aplicar todos los efectos visuales configurados
     VisualEffects.aplicarEfectos();
     
-    // 6. Ajustar rendimiento para dispositivos móviles (cada 60 frames)
+    // 6. Si hay una grabación MP4 en progreso, capturar el frame
+    if (UI.grabacionEnProgreso && UI.grabacionFormato === 'mp4' && UI.mp4Encoder) {
+      UI.procesarFrameMP4();
+    }
+    
+    // 7. Ajustar rendimiento para dispositivos móviles (cada 60 frames)
     frameCounter++;
     if (frameCounter % 60 === 0 && typeof DeviceDetector !== 'undefined') {
       DeviceDetector.ajustarRendimiento();

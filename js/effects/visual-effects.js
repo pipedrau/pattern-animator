@@ -77,7 +77,7 @@ const VisualEffects = {
       this._cachedNoiseFrame = frameCount;
       
       // Limpiar la capa de ruido
-      this.noiseLayer.clear();
+    this.noiseLayer.clear();
       
       // Si la intensidad es muy baja, no hacer nada
       if (Config.ruidoGrafico < 5) return;
@@ -87,7 +87,7 @@ const VisualEffects = {
       
       // Técnica de puntos aleatorios para simular ruido
       // Usar modelo de densidad variable según intensidad
-      this.noiseLayer.noStroke();
+    this.noiseLayer.noStroke();
       
       // Optimización: Usar puntos estratégicos en lugar de puntos completamente aleatorios
       // Esto reduce la cantidad de operaciones de dibujo

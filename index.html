@@ -35,6 +35,9 @@
   <!-- Scripts y estilos -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
   
+  <!-- Encoder MP4 -->
+  <script src="https://cdn.jsdelivr.net/npm/h264-mp4-encoder/embuild/dist/h264-mp4-encoder.web.js"></script>
+  
   <!-- Fuente Roboto de Google Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
   
@@ -65,7 +68,7 @@
   </div>
 
   <!-- Indicador de carga -->
-  <div id="loading-indicator">
+  <div id="loading-indicator" class="loading-indicator">
     <div class="spinner"></div>
     <p>Cargando...</p>
   </div>
@@ -127,22 +130,22 @@
       <h3>Grabar Video</h3>
       <p>Selecciona la duración del video:</p>
       <div class="selector-duracion">
-        <button onclick="UI.seleccionarDuracion(5)" class="duracion-btn active" data-duracion="5">5s</button>
-        <button onclick="UI.seleccionarDuracion(10)" class="duracion-btn" data-duracion="10">10s</button>
-        <button onclick="UI.seleccionarDuracion(15)" class="duracion-btn" data-duracion="15">15s</button>
+        <button onclick="UI.Grabacion.seleccionarDuracion(5)" class="duracion-btn active" data-duracion="5">5s</button>
+        <button onclick="UI.Grabacion.seleccionarDuracion(10)" class="duracion-btn" data-duracion="10">10s</button>
+        <button onclick="UI.Grabacion.seleccionarDuracion(15)" class="duracion-btn" data-duracion="15">15s</button>
       </div>
       
       <p>Formato de video:</p>
       <div class="selector-formato">
-        <button onclick="UI.seleccionarFormato('webm')" class="formato-btn active" data-formato="webm">WebM</button>
-        <button class="formato-btn disabled" data-formato="mp4">MP4 (En desarrollo)</button>
+        <button onclick="UI.Grabacion.seleccionarFormato('webm')" class="formato-btn active" data-formato="webm">WebM</button>
+        <button onclick="UI.Grabacion.seleccionarFormato('mp4')" class="formato-btn" data-formato="mp4">MP4</button>
       </div>
       
       <div class="formato-nota">
-        <p>Actualmente solo está disponible el formato WebM. Si necesitas convertir a MP4, puedes usar servicios online como <a href="https://cloudconvert.com/webm-to-mp4" target="_blank">CloudConvert</a>.</p>
+        <p>La exportación a MP4 puede tardar más tiempo debido al proceso de codificación. Para videos largos, WebM puede ser más rápido.</p>
       </div>
       
-      <button id="iniciar-grabacion" onclick="UI.iniciarGrabacion()">Grabar</button>
+      <button id="iniciar-grabacion" onclick="UI.Grabacion.iniciarGrabacion()">Grabar</button>
       <div class="modal-grabacion-cerrar" onclick="UI.toggleGrabacionModal()">
         <span class="material-icons">close</span>
       </div>
@@ -165,6 +168,7 @@
   <script src="js/core/particle-system.js"></script>
   <script src="js/effects/visual-effects.js"></script>
   <script src="js/ui/ui.js"></script>
+  <script src="js/ui/modules/ui-grabacion.js"></script>
   <script src="js/main.js"></script>
 </body>
 </html> 
