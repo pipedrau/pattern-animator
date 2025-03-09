@@ -185,6 +185,9 @@ function keyPressed() {
     // Limpiar completamente el canvas
     background(Config.colorFondo);
     VisualEffects.reiniciar();
+  } else if (key === 'v' || key === 'V') {
+    // Abrir/cerrar modal de grabación
+    UI.toggleGrabacionModal();
   }
 }
 

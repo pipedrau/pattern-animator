@@ -5,6 +5,15 @@
 const UI = {
   controlPanel: null,
   addParticleOnClickEnabled: true, // Por defecto está habilitado
+  grabacionDuracion: 5, // Duración de la grabación en segundos (por defecto 5s)
+  grabacionFormato: 'mp4', // Formato de grabación (por defecto mp4)
+  mediaRecorder: null, // Instancia del MediaRecorder
+  grabacionEnProgreso: false, // Indica si hay una grabación en progreso
+  grabacionTiempoInicio: 0, // Tiempo de inicio de la grabación
+  grabacionChunks: [], // Fragmentos de la grabación
+  grabacionTemporizador: null, // Temporizador para actualizar el tiempo de grabación
+  ffmpegLoaded: false, // Indicador de si FFmpeg está cargado
+  ffmpeg: null, // Instancia de FFmpeg
   
   crearControles() {
     console.log("Creando panel de control");
@@ -12,13 +21,8 @@ const UI = {
     this.controlPanel = createDiv();
     this.controlPanel.id('controles');
     
-    let titulo = createElement('h3', 'Pattern Animator');
-    titulo.parent(this.controlPanel);
-    
-    // Secciones siempre visibles
-    this._crearSeccionBasica();
-    
     // Secciones plegables
+    this._crearSeccionBasica();
     this._crearSeccionPatrones();
     this._crearSeccionPaletaColores();
     this._crearSeccionMovimiento();
@@ -48,20 +52,15 @@ const UI = {
     this._inicializarSeccionesPlegables();
   },
   
-  // Crea una sección básica siempre visible
+  // Modificar la sección básica para hacerla plegable
   _crearSeccionBasica() {
-    let seccionBasica = createDiv();
-    seccionBasica.parent(this.controlPanel);
-    seccionBasica.class('control-section');
-    
-    // Configuración del Canvas
-    let canvasLabel = createElement('h3', 'Configuración Básica');
-    canvasLabel.parent(seccionBasica);
+    // Crear la sección plegable usando el método existente
+    let content = this._crearSeccionPlegable('Configuración Básica');
     
     // Dimensiones del canvas (en una línea)
     let canvasDimensionsDiv = createDiv();
     canvasDimensionsDiv.class('input-group');
-    canvasDimensionsDiv.parent(seccionBasica);
+    canvasDimensionsDiv.parent(content);
     
     let dimensionsLabel = createElement('p', 'Dimensiones:');
     dimensionsLabel.parent(canvasDimensionsDiv);
@@ -89,7 +88,7 @@ const UI = {
     altoInput.parent(dimensionsContainer);
     
     let aplicarTamanoBtn = createButton('Aplicar');
-    aplicarTamanoBtn.parent(seccionBasica);
+    aplicarTamanoBtn.parent(content);
     aplicarTamanoBtn.mousePressed(() => {
       let nuevoAncho = parseInt(select('#anchoCanvas').value());
       let nuevoAlto = parseInt(select('#altoCanvas').value());
@@ -111,10 +110,10 @@ const UI = {
     
     // Cantidad de partículas
     let cantidadLabel = createElement('p', 'Cantidad de partículas: ' + Config.cantidadParticulas);
-    cantidadLabel.parent(seccionBasica);
+    cantidadLabel.parent(content);
     
     let cantidadSlider = createSlider(1, 500, Config.cantidadParticulas);
-    cantidadSlider.parent(seccionBasica);
+    cantidadSlider.parent(content);
     cantidadSlider.input(() => {
       Config.cantidadParticulas = cantidadSlider.value();
       cantidadLabel.html('Cantidad de partículas: ' + Config.cantidadParticulas);
@@ -125,10 +124,10 @@ const UI = {
     
     // Tamaño de partículas
     let tamanoLabel = createElement('p', 'Tamaño: ' + Config.tamanoParticula);
-    tamanoLabel.parent(seccionBasica);
+    tamanoLabel.parent(content);
     
     let tamanoSlider = createSlider(1, 500, Config.tamanoParticula);
-    tamanoSlider.parent(seccionBasica);
+    tamanoSlider.parent(content);
     tamanoSlider.input(() => {
       Config.tamanoParticula = tamanoSlider.value();
       tamanoLabel.html('Tamaño: ' + Config.tamanoParticula);
@@ -152,10 +151,10 @@ const UI = {
     
     // Velocidad máxima
     let velocidadLabel = createElement('p', 'Velocidad: ' + Config.velocidadMaxima);
-    velocidadLabel.parent(seccionBasica);
+    velocidadLabel.parent(content);
     
     let velocidadSlider = createSlider(0, 100, Config.velocidadMaxima);
-    velocidadSlider.parent(seccionBasica);
+    velocidadSlider.parent(content);
     velocidadSlider.input(() => {
       Config.velocidadMaxima = velocidadSlider.value();
       velocidadLabel.html('Velocidad: ' + Config.velocidadMaxima);
@@ -797,6 +796,8 @@ const UI = {
     // Almacenar referencia para poder acceder desde JavaScript
     seccion.elt.setAttribute('data-title', titulo);
     
+    // No añadimos event listener aquí, se gestionará en _inicializarSeccionesPlegables()
+    
     return content;
   },
   
@@ -807,6 +808,15 @@ const UI = {
     // Usar selectAll para obtener todos los headers
     const headers = selectAll('.collapsible-header');
     console.log(`Encontrados ${headers.length} headers de secciones plegables`);
+    
+    // La sección básica debe estar abierta por defecto
+    const seccionBasica = document.querySelector('.collapsible-section[data-title="Configuración Básica"]');
+    if (seccionBasica) {
+      seccionBasica.classList.add('active');
+      console.log('Sección Configuración Básica activada por defecto');
+    } else {
+      console.warn('No se encontró la sección Configuración Básica');
+    }
     
     // Iterar sobre cada header y asignar el manejador de eventos de forma explícita
     headers.forEach(header => {
@@ -1328,5 +1338,339 @@ const UI = {
       // Reiniciar el sistema para aplicar los nuevos colores
       ParticleSystem.inicializar();
     }
-  }
+  },
+  
+  // Mostrar/ocultar el modal de grabación
+  toggleGrabacionModal() {
+    const modal = document.getElementById('grabacion-modal');
+    modal.classList.toggle('visible');
+    
+    if (!modal.classList.contains('visible') && this.grabacionEnProgreso) {
+      this.detenerGrabacion();
+    }
+  },
+  
+  // Seleccionar duración de la grabación
+  seleccionarDuracion(duracion) {
+    this.grabacionDuracion = duracion;
+    
+    // Actualizar botones
+    const botones = document.querySelectorAll('.duracion-btn');
+    botones.forEach(btn => {
+      btn.classList.remove('active');
+      if (parseInt(btn.dataset.duracion) === duracion) {
+        btn.classList.add('active');
+      }
+    });
+    
+    console.log(`Duración de grabación ajustada a ${duracion}s`);
+  },
+  
+  // Inicializar FFmpeg
+  async _inicializarFFmpeg() {
+    if (this.ffmpegLoaded) {
+      return;
+    }
+    
+    try {
+      // Mostrar indicador de carga
+      const loading = document.getElementById('loading-indicator');
+      loading.style.display = 'flex';
+      
+      // Crear instancia de FFmpeg
+      this.ffmpeg = createFFmpeg({ log: false });
+      
+      // Cargar FFmpeg (esto puede tomar tiempo)
+      await this.ffmpeg.load();
+      this.ffmpegLoaded = true;
+      
+      console.log('FFmpeg cargado correctamente');
+      
+      // Ocultar indicador de carga
+      loading.style.display = 'none';
+    } catch (error) {
+      console.error('Error al cargar FFmpeg:', error);
+      alert('No se pudo inicializar el conversor de video. Intenta nuevamente o usa formato WebM.');
+      
+      // Ocultar indicador de carga
+      const loading = document.getElementById('loading-indicator');
+      loading.style.display = 'none';
+    }
+  },
+  
+  // Convertir WebM a MP4
+  async _convertirAMP4(webmBlob) {
+    // Si FFmpeg no está cargado, intentar cargarlo
+    if (!this.ffmpegLoaded) {
+      await this._inicializarFFmpeg();
+      
+      // Si sigue sin cargarse, descargar como WebM
+      if (!this.ffmpegLoaded) {
+        console.warn('FFmpeg no está disponible, descargando WebM como alternativa');
+        this._descargarVideo(webmBlob, 'webm');
+        return;
+      }
+    }
+    
+    try {
+      // Mostrar indicador de carga para la conversión
+      const loading = document.getElementById('loading-indicator');
+      const loadingText = loading.querySelector('p');
+      loadingText.textContent = 'Convirtiendo video...';
+      loading.style.display = 'flex';
+      
+      console.log('Iniciando conversión a MP4...');
+      
+      // Convertir Blob a ArrayBuffer
+      const arrayBuffer = await webmBlob.arrayBuffer();
+      const inputData = new Uint8Array(arrayBuffer);
+      
+      // Cargar el archivo WebM en FFmpeg
+      this.ffmpeg.FS('writeFile', 'input.webm', inputData);
+      
+      // Realizar la conversión con buena calidad pero tamaño razonable
+      await this.ffmpeg.run('-i', 'input.webm', '-c:v', 'libx264', '-preset', 'fast', '-crf', '22', '-pix_fmt', 'yuv420p', 'output.mp4');
+      
+      // Leer el archivo MP4 resultante
+      const mp4Data = this.ffmpeg.FS('readFile', 'output.mp4');
+      
+      // Convertir a Blob y descargar
+      const mp4Blob = new Blob([mp4Data.buffer], { type: 'video/mp4' });
+      this._descargarVideo(mp4Blob, 'mp4');
+      
+      // Limpiar archivos y memoria
+      this.ffmpeg.FS('unlink', 'input.webm');
+      this.ffmpeg.FS('unlink', 'output.mp4');
+      
+      console.log('Conversión a MP4 completada');
+      
+      // Ocultar indicador de carga
+      loading.style.display = 'none';
+      loadingText.textContent = 'Cargando...';
+      
+    } catch (error) {
+      console.error('Error al convertir a MP4:', error);
+      alert('Error al convertir el video. Se descargará en formato WebM.');
+      this._descargarVideo(webmBlob, 'webm');
+      
+      // Ocultar indicador de carga
+      const loading = document.getElementById('loading-indicator');
+      loading.style.display = 'none';
+      const loadingText = loading.querySelector('p');
+      loadingText.textContent = 'Cargando...';
+    }
+  },
+  
+  // Descargar video (función helper)
+  _descargarVideo(blob, formato) {
+    console.log(`Descargando video en formato ${formato}`);
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.style.display = 'none';
+    a.href = url;
+    a.download = `pattern-animator-${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.${formato}`;
+    document.body.appendChild(a);
+    a.click();
+    
+    // Limpiar después de un tiempo
+    setTimeout(() => {
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }, 100);
+  },
+  
+  // Seleccionar formato de video
+  seleccionarFormato(formato) {
+    this.grabacionFormato = formato;
+    
+    // Actualizar botones
+    const botones = document.querySelectorAll('.formato-btn');
+    botones.forEach(btn => {
+      btn.classList.remove('active');
+      if (btn.dataset.formato === formato) {
+        btn.classList.add('active');
+      }
+    });
+    
+    console.log(`Formato de video ajustado a ${formato}`);
+    
+    // Si es MP4, precargar FFmpeg para que esté listo
+    if (formato === 'mp4' && !this.ffmpegLoaded) {
+      this._inicializarFFmpeg().catch(err => {
+        console.warn('No se pudo precargar FFmpeg:', err);
+      });
+    }
+  },
+  
+  // Procesar video grabado
+  async _procesarVideo(blob) {
+    console.log(`Procesando video en formato ${this.grabacionFormato}`);
+    
+    try {
+      // Si se seleccionó WebM, descargar directamente
+      if (this.grabacionFormato === 'webm') {
+        this._descargarVideo(blob, 'webm');
+        return;
+      }
+      
+      // Si se seleccionó MP4, convertir (y NO descargar el WebM)
+      if (this.grabacionFormato === 'mp4') {
+        await this._convertirAMP4(blob);
+      }
+    } catch (error) {
+      console.error('Error al procesar el video:', error);
+      // Si hay algún error, intentamos descargar en WebM como fallback
+      this._descargarVideo(blob, 'webm');
+    }
+  },
+  
+  // Modificar el método iniciarGrabacion para procesar según formato
+  iniciarGrabacion() {
+    if (this.grabacionEnProgreso) {
+      console.log('Ya hay una grabación en progreso');
+      return;
+    }
+    
+    // Verificar soporte para MediaRecorder
+    if (!navigator.mediaDevices || !MediaRecorder) {
+      alert('Tu navegador no soporta la API de grabación de medios. Intenta con Chrome, Firefox o Edge actualizado.');
+      return;
+    }
+    
+    try {
+      console.log(`Iniciando grabación de ${this.grabacionDuracion} segundos en formato ${this.grabacionFormato}...`);
+      
+      // Obtener el canvas
+      const canvas = document.querySelector('canvas');
+      if (!canvas) {
+        console.error('No se encontró el canvas para grabar');
+        return;
+      }
+      
+      // Precargar FFmpeg si es necesario
+      if (this.grabacionFormato === 'mp4' && !this.ffmpegLoaded) {
+        this._inicializarFFmpeg().catch(err => console.warn('FFmpeg no pudo cargarse:', err));
+      }
+      
+      // Configurar la calidad del video (60fps es un buen balance entre calidad y rendimiento)
+      const stream = canvas.captureStream(60);
+      this.grabacionChunks = [];
+      
+      // Configurar el MediaRecorder con opciones optimizadas para calidad alta
+      const opciones = { 
+        mimeType: 'video/webm;codecs=vp9', 
+        videoBitsPerSecond: 8000000 // Aumentar la calidad para mejor conversión posterior
+      };
+      
+      // Intentar crear el MediaRecorder con las opciones preferidas
+      try {
+        this.mediaRecorder = new MediaRecorder(stream, opciones);
+      } catch (e) {
+        console.warn('El formato VP9 no es soportado, intentando con VP8:', e);
+        
+        // Intentar con formato alternativo si VP9 no es soportado
+        try {
+          this.mediaRecorder = new MediaRecorder(stream, { 
+            mimeType: 'video/webm;codecs=vp8',
+            videoBitsPerSecond: 8000000
+          });
+        } catch (e) {
+          console.warn('El formato VP8 no es soportado, usando el formato por defecto:', e);
+          this.mediaRecorder = new MediaRecorder(stream);
+        }
+      }
+      
+      // Eventos del MediaRecorder
+      this.mediaRecorder.ondataavailable = (e) => {
+        if (e.data && e.data.size > 0) {
+          this.grabacionChunks.push(e.data);
+        }
+      };
+      
+      this.mediaRecorder.onstop = async () => {
+        // Crear blob con todos los fragmentos
+        const blob = new Blob(this.grabacionChunks, { type: 'video/webm' });
+        
+        // Procesar según formato seleccionado
+        await this._procesarVideo(blob);
+        
+        // Restablecer estado
+        this.grabacionEnProgreso = false;
+        this.grabacionChunks = [];
+        
+        // Ocultar indicador
+        document.getElementById('grabacion-indicador').classList.remove('visible');
+        
+        // Cambiar botón a estado normal
+        const btnGrabar = document.getElementById('iniciar-grabacion');
+        btnGrabar.textContent = 'Grabar';
+        btnGrabar.classList.remove('grabando');
+        
+        console.log('Grabación finalizada');
+      };
+      
+      // Iniciar grabación
+      this.mediaRecorder.start();
+      this.grabacionEnProgreso = true;
+      this.grabacionTiempoInicio = Date.now();
+      
+      // Mostrar indicador de grabación
+      const indicador = document.getElementById('grabacion-indicador');
+      indicador.classList.add('visible');
+      
+      // Cambiar texto del botón
+      const btnGrabar = document.getElementById('iniciar-grabacion');
+      btnGrabar.textContent = 'Grabando...';
+      btnGrabar.classList.add('grabando');
+      
+      // Iniciar temporizador para actualizar tiempo
+      this.actualizarTiempoGrabacion();
+      this.grabacionTemporizador = setInterval(() => this.actualizarTiempoGrabacion(), 1000);
+      
+      // Programar detención automática
+      setTimeout(() => {
+        if (this.grabacionEnProgreso) {
+          this.detenerGrabacion();
+        }
+      }, this.grabacionDuracion * 1000);
+      
+    } catch (error) {
+      console.error('Error al iniciar la grabación:', error);
+      alert(`Error al iniciar la grabación: ${error.message}`);
+    }
+  },
+  
+  // Detener grabación
+  detenerGrabacion() {
+    if (!this.grabacionEnProgreso) {
+      console.log('No hay grabación para detener');
+      return;
+    }
+    
+    try {
+      if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') {
+        this.mediaRecorder.stop();
+        console.log('Grabación detenida manualmente');
+      }
+      
+      // Limpiar temporizador
+      if (this.grabacionTemporizador) {
+        clearInterval(this.grabacionTemporizador);
+        this.grabacionTemporizador = null;
+      }
+      
+    } catch (error) {
+      console.error('Error al detener la grabación:', error);
+    }
+  },
+  
+  // Actualizar el tiempo mostrado en el indicador de grabación
+  actualizarTiempoGrabacion() {
+    if (!this.grabacionEnProgreso) return;
+    
+    const tiempoTranscurrido = Math.floor((Date.now() - this.grabacionTiempoInicio) / 1000);
+    const tiempoRestante = Math.max(0, this.grabacionDuracion - tiempoTranscurrido);
+    
+    document.getElementById('grabacion-tiempo').textContent = `Grabando: ${tiempoRestante}s`;
+  },
 }; 
