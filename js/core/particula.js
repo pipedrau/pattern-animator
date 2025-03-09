@@ -21,6 +21,13 @@ class Particula {
     this.color = ColorUtils.obtenerColorAleatorio();
     this.alpha = Config.transparenciaParticulas;
     
+    // Forma de la partícula
+    this.forma = Config.formaParticula;
+    
+    // Soporte para forma personalizada
+    this.formaPersonalizada = Config.formaPersonalizada;
+    this.formaPersonalizadaIndex = Config.formaPersonalizadaActual;
+    
     // Forma irregular básica (para compatibilidad)
     this.formaIrregular = [];
     for (let i = 0; i < 5; i++) {
@@ -477,6 +484,13 @@ class Particula {
   }
   
   _dibujarForma(pg) {
+    // Si está usando una forma personalizada, dibujarla
+    if (Config.formaPersonalizada && this.formaPersonalizada) {
+      this._dibujarFormaPersonalizada(pg);
+      return;
+    }
+    
+    // Si no, dibujar forma estándar
     switch (Config.formaParticula) {
       case 'Círculo':
         pg.ellipse(0, 0, this.size, this.size);
@@ -638,35 +652,41 @@ class Particula {
   }
   
   _dibujarFormaRastro(pg, escala) {
-    // Usar la misma forma que la partícula actual, pero escalada
+    // Si está usando una forma personalizada, dibujarla
+    if (Config.formaPersonalizada && this.formaPersonalizada) {
+      this._dibujarFormaPersonalizada(pg, escala);
+      return;
+    }
+    
+    // Si no, dibujar forma estándar
     switch (Config.formaParticula) {
       case 'Círculo':
-        pg.ellipse(0, 0, this.size, this.size);
+        pg.ellipse(0, 0, this.size * escala, this.size * escala);
         break;
         
       case 'Cuadrado':
         pg.rectMode(CENTER);
-        pg.rect(0, 0, this.size, this.size);
+        pg.rect(0, 0, this.size * escala, this.size * escala);
         break;
         
       case 'Triángulo':
-        ShapeUtils.polygon(pg, 0, 0, this.size / 2, 3);
+        ShapeUtils.polygon(pg, 0, 0, this.size * escala / 2, 3);
         break;
         
       case 'Estrella':
-        ShapeUtils.star(pg, 0, 0, this.size / 2, this.size / 4, 5);
+        ShapeUtils.star(pg, 0, 0, this.size * escala / 2, this.size * escala / 4, 5);
         break;
         
       case 'Pentágono':
-        ShapeUtils.polygon(pg, 0, 0, this.size / 2, 5);
+        ShapeUtils.polygon(pg, 0, 0, this.size * escala / 2, 5);
         break;
         
       case 'Hexágono':
-        ShapeUtils.polygon(pg, 0, 0, this.size / 2, 6);
+        ShapeUtils.polygon(pg, 0, 0, this.size * escala / 2, 6);
         break;
         
       case 'Octágono':
-        ShapeUtils.polygon(pg, 0, 0, this.size / 2, 8);
+        ShapeUtils.polygon(pg, 0, 0, this.size * escala / 2, 8);
         break;
         
       case 'Línea':
@@ -766,6 +786,93 @@ class Particula {
       const y = sin(angulo) * radio;
       
       this.puntosCurvosIrregulares.push(createVector(x, y));
+    }
+  }
+
+  // Dibujar forma personalizada desde SVG
+  _dibujarFormaPersonalizada(pg, escala = 1) {
+    // Verificar que existe el índice y el SVG
+    if (typeof this.formaPersonalizadaIndex !== 'number' || 
+        !Config.formasPersonalizadas[this.formaPersonalizadaIndex]) {
+      // Si no existe, volver a forma estándar
+      this.formaPersonalizada = false;
+      this._dibujarForma(pg);
+      return;
+    }
+    
+    const forma = Config.formasPersonalizadas[this.formaPersonalizadaIndex];
+    
+    // Si tenemos el SVG como elemento cargado, usarlo directamente
+    if (forma.elemento) {
+      pg.push();
+      pg.scale(this.size / 50 * escala); // Escalar proporcionalmente
+      pg.image(forma.elemento, -25, -25, 50, 50);
+      pg.pop();
+      return;
+    }
+    
+    // Si no tenemos elemento cargado, intentar crear uno
+    try {
+      if (!forma.intentosCarga) forma.intentosCarga = 0;
+      
+      // Limitar los intentos de carga para no sobrecargar
+      if (forma.intentosCarga >= 3) {
+        // Dibujar círculo como fallback permanente
+        pg.ellipse(0, 0, this.size * escala, this.size * escala);
+        return;
+      }
+      
+      forma.intentosCarga++;
+      
+      // Crear un div temporal con el SVG
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = forma.svg;
+      
+      // Buscar el tag SVG (si está envuelto en otros elementos)
+      let svgElement = tempDiv.querySelector('svg');
+      
+      if (!svgElement) {
+        console.error('No se encontró elemento SVG válido');
+        pg.ellipse(0, 0, this.size * escala, this.size * escala);
+        return;
+      }
+      
+      // Establecer viewBox si no lo tiene
+      if (!svgElement.getAttribute('viewBox')) {
+        svgElement.setAttribute('viewBox', '0 0 100 100');
+      }
+      
+      // Normalizar tamaños
+      svgElement.setAttribute('width', '50px');
+      svgElement.setAttribute('height', '50px');
+      
+      // Convertir a string seguro para base64
+      const svgString = new XMLSerializer().serializeToString(svgElement);
+      const svgBase64 = 'data:image/svg+xml;base64,' + btoa(
+        unescape(encodeURIComponent(svgString))
+      );
+      
+      // Usar p5.js para cargar la imagen SVG
+      loadImage(
+        svgBase64, 
+        img => {
+          // Guardar el elemento para uso futuro
+          forma.elemento = img;
+          console.log(`SVG cargado exitosamente para forma "${forma.nombre}"`);
+        },
+        error => {
+          console.error('Error cargando SVG:', error);
+          forma.intentosCarga = 3; // No intentar más
+        }
+      );
+      
+      // Para esta vez, solo dibujar un círculo como fallback hasta que cargue
+      pg.ellipse(0, 0, this.size * escala, this.size * escala);
+      
+    } catch (error) {
+      console.error('Error dibujando forma personalizada:', error);
+      // Si falla, dibujar círculo como fallback
+      pg.ellipse(0, 0, this.size * escala, this.size * escala);
     }
   }
 } 

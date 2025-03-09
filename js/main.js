@@ -29,12 +29,6 @@ function setup() {
   // Verificar si se debe mostrar el popup de bienvenida
   UI.checkWelcomePopup();
   
-  // Activar por defecto el botón de añadir partículas con clic
-  const btnElement = document.querySelector('.action-button[title*="Partículas con Clic"]');
-  if (btnElement) {
-    btnElement.classList.add('active');
-  }
-  
   // Si es un dispositivo móvil, adaptar la interfaz
   if (typeof DeviceDetector !== 'undefined' && DeviceDetector.isMobile) {
     // Ajustar controles iniciales

@@ -4,7 +4,7 @@
  */
 const UI = {
   controlPanel: null,
-  addParticleOnClickEnabled: true, // Por defecto está habilitado
+  addParticleOnClickEnabled: false, // Por defecto está deshabilitado
   grabacionDuracion: 5, // Duración de la grabación en segundos (por defecto 5s)
   grabacionFormato: 'webm', // Formato de grabación (siempre WebM por ahora)
   mediaRecorder: null, // Instancia del MediaRecorder
@@ -25,6 +25,7 @@ const UI = {
     this._crearSeccionPaletaColores();
     this._crearSeccionMovimiento();
     this._crearSeccionApariencia();
+    this._crearSeccionFormasPersonalizadas();
     this._crearSeccionRastro();
     this._crearSeccionEfectos();
     this._crearSeccionAcciones();
@@ -1343,6 +1344,16 @@ const UI = {
     const modal = document.getElementById('grabacion-modal');
     modal.classList.toggle('visible');
     
+    // Destacar el botón de grabación cuando la ventana está abierta
+    const grabacionBtn = document.querySelector('.action-button[title*="Grabar Video"]');
+    if (grabacionBtn) {
+      if (modal.classList.contains('visible')) {
+        grabacionBtn.classList.add('active');
+      } else {
+        grabacionBtn.classList.remove('active');
+      }
+    }
+    
     if (!modal.classList.contains('visible') && this.grabacionEnProgreso) {
       this.detenerGrabacion();
     }
@@ -1584,5 +1595,331 @@ const UI = {
     const tiempoRestante = Math.max(0, this.grabacionDuracion - tiempoTranscurrido);
     
     document.getElementById('grabacion-tiempo').textContent = `Grabando: ${tiempoRestante}s`;
+  },
+  
+  // Crear sección plegable para formas personalizadas
+  _crearSeccionFormasPersonalizadas() {
+    let seccion = this._crearSeccionPlegable('Formas Personalizadas');
+    
+    // Mensaje informativo
+    let infoText = createElement('p', 'Importa tus propias formas SVG para usar como partículas:');
+    infoText.parent(seccion);
+    
+    // Botones de acción
+    let botonesContainer = createDiv();
+    botonesContainer.class('botones-formas-container');
+    botonesContainer.parent(seccion);
+    
+    // Botón para importar SVG
+    let importarBtn = createButton('Importar SVG');
+    importarBtn.parent(botonesContainer);
+    importarBtn.class('importar-svg-btn');
+    importarBtn.mousePressed(() => this._importarSVG());
+    
+    // Botón para volver a formas estándar
+    let volverBtn = createButton('Volver a formas estándar');
+    volverBtn.parent(botonesContainer);
+    volverBtn.class('volver-formas-btn');
+    volverBtn.mousePressed(() => this._volverAFormasEstandar());
+    
+    // Contenedor para la galería de formas importadas
+    let galeriaContainer = createDiv();
+    galeriaContainer.class('formas-personalizadas-galeria');
+    galeriaContainer.id('formas-personalizadas-galeria');
+    galeriaContainer.parent(seccion);
+    
+    // Mensaje cuando no hay formas
+    let noFormsMsg = createElement('p', 'No hay formas personalizadas importadas.');
+    noFormsMsg.class('no-forms-msg');
+    noFormsMsg.id('no-forms-msg');
+    noFormsMsg.parent(galeriaContainer);
+    
+    // Si hay formas personalizadas guardadas, cargarlas
+    if (localStorage.getItem('formasPersonalizadas')) {
+      try {
+        let formasGuardadas = JSON.parse(localStorage.getItem('formasPersonalizadas'));
+        Config.formasPersonalizadas = formasGuardadas;
+        
+        if (formasGuardadas.length > 0) {
+          select('#no-forms-msg').style('display', 'none');
+          this._actualizarGaleriaFormas();
+        }
+      } catch (e) {
+        console.error('Error al cargar formas personalizadas:', e);
+      }
+    }
+  },
+  
+  // Método para volver a usar las formas estándar
+  _volverAFormasEstandar() {
+    // Desactivar forma personalizada
+    Config.formaPersonalizada = false;
+    Config.formaPersonalizadaActual = null;
+    
+    // Actualizar partículas existentes para usar la forma estándar
+    for (let p of ParticleSystem.particulas) {
+      p.formaPersonalizada = false;
+    }
+    
+    // Actualizar UI
+    selectAll('.forma-personalizada-item').forEach(item => {
+      item.removeClass('activa');
+    });
+    
+    console.log('Volviendo a usar formas estándar');
+  },
+  
+  // Método para importar un SVG
+  _importarSVG() {
+    // Crear un input de archivo oculto
+    let input = createFileInput(file => {
+      // Verificar si es un SVG de varias maneras
+      const fileName = file.name || '';
+      const fileType = file.type || '';
+      
+      // Verificar por extensión y tipo si está disponible
+      const hasSvgExtension = fileName.toLowerCase().endsWith('.svg');
+      const hasSvgMimeType = fileType.includes('svg') || fileType === 'image/svg+xml';
+      
+      console.log('Archivo seleccionado:', fileName, 'Tipo:', fileType);
+      
+      if (hasSvgExtension || hasSvgMimeType) {
+        console.log('SVG detectado, procesando...');
+        this._procesarSVG(file);
+      } else {
+        console.error('Tipo de archivo no válido:', fileType, 'Nombre:', fileName);
+        alert('Por favor, selecciona un archivo SVG válido (extensión .svg).');
+      }
+    }, false); // false para no permitir múltiples archivos
+    
+    input.attribute('accept', '.svg,image/svg+xml');
+    input.style('display', 'none');
+    document.body.appendChild(input.elt);
+    input.elt.click(); // Simular clic para abrir el selector de archivos
+    
+    // Eliminar el input después de usarlo
+    setTimeout(() => {
+      if (input && input.elt && input.elt.parentNode) {
+        input.elt.parentNode.removeChild(input.elt);
+      }
+    }, 1000);
+  },
+  
+  // Procesar el archivo SVG importado
+  _procesarSVG(file) {
+    // En p5.js, 'file' puede ser un objeto con estructura diferente a un File estándar
+    const fileData = file.file || file; // Compatibilidad con diferentes estructuras
+    const fileName = file.name || 'forma-personalizada';
+    
+    console.log('Procesando SVG:', fileName);
+    
+    // Leer el contenido del archivo
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        let svgContent = event.target.result;
+        
+        // Verificar rápidamente si parece un SVG válido
+        if (!svgContent.includes('<svg') || !svgContent.includes('</svg>')) {
+          console.error('El contenido no parece ser un SVG válido');
+          alert('El archivo seleccionado no parece ser un SVG válido.');
+          return;
+        }
+        
+        // Crear un nombre amigable para esta forma
+        let nombre = fileName.replace('.svg', '').substring(0, 15);
+        
+        // Limitar el tamaño del SVG para rendimiento
+        if (svgContent.length > 50000) {
+          if (!confirm('Este SVG es bastante grande y podría afectar el rendimiento. ¿Deseas continuar?')) {
+            return;
+          }
+        }
+        
+        // Guardar el SVG en la configuración
+        let nuevaForma = {
+          id: Date.now(), // ID único
+          nombre: nombre,
+          svg: svgContent
+        };
+        
+        Config.formasPersonalizadas.push(nuevaForma);
+        
+        // Actualizar localStorage
+        localStorage.setItem('formasPersonalizadas', JSON.stringify(Config.formasPersonalizadas));
+        
+        // Ocultar mensaje de no hay formas
+        select('#no-forms-msg').style('display', 'none');
+        
+        // Actualizar la galería
+        this._actualizarGaleriaFormas();
+        
+        console.log(`SVG importado: ${nombre}`);
+        
+        // Test: probar a cargar el SVG para verificar validez
+        this._testSVGCarga(nuevaForma, Config.formasPersonalizadas.length - 1);
+        
+      } catch (error) {
+        console.error('Error procesando el SVG:', error);
+        alert('Hubo un problema al procesar el archivo SVG. Asegúrate de que es un archivo SVG válido.');
+      }
+    };
+    
+    reader.onerror = (error) => {
+      console.error('Error leyendo el archivo:', error);
+      alert('Error al leer el archivo. Inténtalo de nuevo.');
+    };
+    
+    try {
+      reader.readAsText(fileData);
+    } catch (error) {
+      console.error('Error accediendo al archivo:', error);
+      alert('No se pudo acceder al archivo seleccionado.');
+    }
+  },
+  
+  // Método para probar la carga de un SVG (validación)
+  _testSVGCarga(forma, index) {
+    try {
+      // Crear un div temporal con el SVG
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = forma.svg;
+      
+      // Buscar el tag SVG (si está envuelto en otros elementos)
+      let svgElement = tempDiv.querySelector('svg');
+      
+      if (!svgElement) {
+        console.error('No se encontró elemento SVG válido en el contenido');
+        alert('El archivo importado no contiene un elemento SVG válido.');
+        
+        // Eliminar la forma inválida
+        this._eliminarFormaPersonalizada(index);
+        return;
+      }
+      
+      // Establecer viewBox si no lo tiene
+      if (!svgElement.getAttribute('viewBox')) {
+        svgElement.setAttribute('viewBox', '0 0 100 100');
+      }
+      
+      // Normalizar tamaños
+      svgElement.setAttribute('width', '50px');
+      svgElement.setAttribute('height', '50px');
+      
+      console.log('SVG validado con éxito');
+    } catch (error) {
+      console.error('Error validando SVG:', error);
+    }
+  },
+  
+  // Actualizar la galería de formas personalizadas
+  _actualizarGaleriaFormas() {
+    let galeria = select('#formas-personalizadas-galeria');
+    
+    // Limpiar elementos previos (excepto el mensaje de no formas)
+    let items = selectAll('.forma-personalizada-item');
+    items.forEach(item => item.remove());
+    
+    // Añadir cada forma a la galería
+    Config.formasPersonalizadas.forEach((forma, index) => {
+      let item = createDiv();
+      item.class('forma-personalizada-item');
+      item.parent(galeria);
+      
+      // Miniatura SVG
+      let svgContainer = createDiv();
+      svgContainer.class('forma-personalizada-preview');
+      svgContainer.html(forma.svg);
+      svgContainer.parent(item);
+      
+      // Nombre de la forma
+      let nombreP = createElement('p', forma.nombre);
+      nombreP.class('forma-personalizada-nombre');
+      nombreP.parent(item);
+      
+      // Botones de acción
+      let btnContainer = createDiv();
+      btnContainer.class('forma-personalizada-btns');
+      btnContainer.parent(item);
+      
+      // Botón para usar esta forma
+      let usarBtn = createButton('Usar');
+      usarBtn.class('forma-personalizada-usar-btn');
+      usarBtn.parent(btnContainer);
+      
+      // Importante: Usamos una función de cierre para preservar el valor correcto de index
+      const currentIndex = index; // Capturar el índice actual
+      usarBtn.mousePressed(() => this._usarFormaPersonalizada(currentIndex));
+      
+      // Botón para eliminar esta forma
+      let eliminarBtn = createButton('×');
+      eliminarBtn.class('forma-personalizada-eliminar-btn');
+      eliminarBtn.parent(btnContainer);
+      
+      // Usamos el mismo enfoque para el botón eliminar
+      eliminarBtn.mousePressed(() => this._eliminarFormaPersonalizada(currentIndex));
+      
+      // Añadir clase 'activa' si esta es la forma actual
+      if (Config.formaPersonalizada && Config.formaPersonalizadaActual === index) {
+        item.addClass('activa');
+      }
+    });
+  },
+  
+  // Usar una forma personalizada
+  _usarFormaPersonalizada(index) {
+    if (index >= 0 && index < Config.formasPersonalizadas.length) {
+      // Guardar índice actual
+      Config.formaPersonalizadaActual = index;
+      Config.formaPersonalizada = true;
+      
+      // Actualizar interfaz
+      selectAll('.forma-personalizada-item').forEach((item, i) => {
+        if (i === index) item.addClass('activa');
+        else item.removeClass('activa');
+      });
+      
+      // Actualizar partículas existentes
+      for (let p of ParticleSystem.particulas) {
+        p.formaPersonalizada = true;
+        p.formaPersonalizadaIndex = index;
+      }
+      
+      console.log(`Usando forma personalizada: ${Config.formasPersonalizadas[index].nombre}`);
+    }
+  },
+  
+  // Eliminar una forma personalizada
+  _eliminarFormaPersonalizada(index) {
+    if (index >= 0 && index < Config.formasPersonalizadas.length) {
+      // Confirmar eliminación
+      if (confirm(`¿Estás seguro de eliminar la forma "${Config.formasPersonalizadas[index].nombre}"?`)) {
+        // Si esta forma estaba activa, desactivarla
+        if (Config.formaPersonalizada && Config.formaPersonalizadaActual === index) {
+          Config.formaPersonalizada = false;
+          Config.formaPersonalizadaActual = null;
+          
+          // Volver a la forma estándar para las partículas
+          for (let p of ParticleSystem.particulas) {
+            p.formaPersonalizada = false;
+            p.forma = Config.formaParticula;
+          }
+        }
+        
+        // Eliminar la forma
+        Config.formasPersonalizadas.splice(index, 1);
+        
+        // Actualizar localStorage
+        localStorage.setItem('formasPersonalizadas', JSON.stringify(Config.formasPersonalizadas));
+        
+        // Actualizar UI
+        this._actualizarGaleriaFormas();
+        
+        // Mostrar mensaje de no formas si ya no hay ninguna
+        if (Config.formasPersonalizadas.length === 0) {
+          select('#no-forms-msg').style('display', 'block');
+        }
+      }
+    }
   },
 }; 

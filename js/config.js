@@ -66,6 +66,11 @@ const Config = {
     'Línea Larga'
   ],
   
+  // SVGs personalizados
+  formaPersonalizada: false, // Indica si se está usando una forma personalizada
+  formasPersonalizadas: [], // Array para guardar las formas SVG personalizadas
+  formaPersonalizadaActual: null, // Índice de la forma personalizada actual
+  
   // Configuración de movimiento
   modoMovimiento: 'Flujo de Campo',
   modosDisponibles: [
