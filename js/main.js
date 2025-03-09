@@ -65,9 +65,8 @@ function draw() {
     // 4. Mostrar escena en el canvas principal
     image(pg, 0, 0);
     
-    // 5. Aplicar efectos adicionales
-    VisualEffects.aplicarRuidoGrafico();
-    VisualEffects.aplicarDesenfoque(pg);
+    // 5. Aplicar todos los efectos visuales configurados
+    VisualEffects.aplicarEfectos();
     
     // 6. Ajustar rendimiento para dispositivos móviles (cada 60 frames)
     frameCounter++;

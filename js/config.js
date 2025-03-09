@@ -13,28 +13,29 @@ const Config = {
   velocidadMaxima: 4,
   turbulencia: 0,
   
-  // Patrones iniciales para partículas
-  patronInicial: 'Cuadrícula',
+  // Configuración de patrones
+  patronInicial: 'Aleatorio',
   patronesDisponibles: [
     'Aleatorio', 
     'Cuadrícula', 
-    'Círculo', 
-    'Espiral', 
+    'Cuadrícula Polar', 
+    'Espiral',
     'Líneas', 
     'Estrella', 
     'Anillos', 
     'Hexágonos', 
-    'Ondas', 
-    'Diagonal'
+    'Ondas',
+    'Diagonal',
+    'Centro'
   ],
   
   // Configuración de visualización
   colorFondo: '#000000',
   transparenciaParticulas: 255,
   escala: 20,
-  mostrarRastro: false,
+  mostrarRastro: true,
   trailLength: 20,
-  trailFinalSize: 1, // Tamaño final del rastro (proporción del tamaño original)
+  trailFinalSize: 0.1, // Tamaño final del rastro (proporción del tamaño original)
   formaParticula: 'Círculo',
   rotacionParticula: 0,
   
@@ -66,7 +67,7 @@ const Config = {
   ],
   
   // Configuración de movimiento
-  modoMovimiento: 'Mover Derecha',
+  modoMovimiento: 'Flujo de Campo',
   modosDisponibles: [
     'Flujo de Campo',
     'Movimiento Aleatorio',
@@ -98,6 +99,29 @@ const Config = {
   desenfoque: 0,
   ruidoGrafico: 0,
   
+  // Efecto pixelado
+  pixeladoActivo: false,
+  pixeladoTamano: 4, // 1-100 donde 1 es casi normal y 100 es muy pixelado
+  
+  // Efecto bloom (resplandor)
+  bloomActivo: false,
+  bloomIntensidad: 50, // 0-100
+  bloomUmbral: 50, // 0-100, umbral de brillo para aplicar bloom
+  bloomColor: '#FFFFFF', // Color del resplandor
+  
+  // Efecto semitono
+  semitonoActivo: false,
+  semitonoEscala: 0.2, // 0-1, donde 0 es mínimo y 1 es máximo (anteriormente era 1-100)
+  
+  // Efecto aberración cromática
+  aberracionActiva: false,
+  aberracionIntensidad: 30, // 0-100
+  aberracionAnimada: false, // Si la aberración se anima con el tiempo
+  
+  // Efecto glitch
+  glitchActivo: false,
+  glitchIntensidad: 50, // 0-100
+  
   // Interfaz
   mostrarInfo: false,
   controlVisible: true,
@@ -116,6 +140,11 @@ const Config = {
   strokeColor: '#FFFFFF',
   strokeOpacity: 255,
   strokeWeightValue: 1,
+  
+  // Opciones específicas para el patrón Ondas
+  amplitudOndas: 100,      // Amplitud de las ondas (altura)
+  frecuenciaOndas: 0.05,   // Frecuencia de las ondas (más bajo = ondas más amplias)
+  cantidadOndas: 3,        // Cantidad de ondas que se dibujan
   
   // Paleta de colores
   paletaColores: []

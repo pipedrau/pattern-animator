@@ -21,10 +21,16 @@ class Particula {
     this.color = ColorUtils.obtenerColorAleatorio();
     this.alpha = Config.transparenciaParticulas;
     
-    // Forma irregular para ese tipo de partícula
+    // Forma irregular básica (para compatibilidad)
     this.formaIrregular = [];
     for (let i = 0; i < 5; i++) {
       this.formaIrregular.push(createVector(random(-this.size / 2, this.size / 2), random(-this.size / 2, this.size / 2)));
+    }
+    
+    // Inicializar los puntos curvos irregulares si se va a usar la forma irregular mejorada
+    this.puntosCurvosIrregulares = null;
+    if (Config.formaParticula === 'Irregular') {
+      this.generarPuntosCurvosIrregulares();
     }
   }
   
@@ -398,8 +404,8 @@ class Particula {
         });
         
         // Mantener solo las últimas maxHistory posiciones
-        if (this.historia.length > this.maxHistory) {
-          this.historia.splice(0, 1);
+      if (this.historia.length > this.maxHistory) {
+        this.historia.splice(0, 1);
         }
       }
     }
@@ -514,20 +520,62 @@ class Particula {
         break;
         
       case 'Curva':
+        // Guardar el estilo de relleno original
+        let savedFillCurve = pg.drawingContext.fillStyle;
+        // Deshabilitar el relleno y configurar el trazo
+        pg.noFill();
+        pg.stroke(this.color);
+        pg.strokeWeight(this.size / 8); // Grosor proporcional al tamaño
+        
+        // Dibujar una curva Bézier suave
         pg.beginShape();
-        pg.curveVertex(-this.size / 2, 0);
-        pg.curveVertex(-this.size / 4, -this.size / 4);
-        pg.curveVertex(0, 0);
-        pg.curveVertex(this.size / 4, this.size / 4);
-        pg.curveVertex(this.size / 2, 0);
+        // Punto de control inicial (no se dibuja)
+        pg.curveVertex(-this.size, this.size / 2);
+        // Puntos de la curva
+        pg.curveVertex(-this.size / 2, this.size / 2);
+        pg.curveVertex(-this.size / 4, -this.size / 2);
+        pg.curveVertex(this.size / 4, this.size / 2);
+        pg.curveVertex(this.size / 2, -this.size / 2);
+        // Punto de control final (no se dibuja)
+        pg.curveVertex(this.size, -this.size / 2);
         pg.endShape();
+        
+        // Restaurar el fill original si es necesario
+        if (Config.gradienteParticulas) {
+          pg.drawingContext.fillStyle = savedFillCurve;
+        }
         break;
         
       case 'Irregular':
-        pg.beginShape();
-        for (let v of this.formaIrregular) {
-          pg.vertex(v.x, v.y);
+        // Si no se han generado los puntos, generarlos con una distribución más curva
+        if (!this.puntosCurvosIrregulares) {
+          this.generarPuntosCurvosIrregulares();
         }
+        
+        // Dibujar una forma irregular con curvas suaves
+        pg.beginShape();
+        
+        // Agregar puntos de control antes y después para suavizar los extremos
+        const primerPunto = this.puntosCurvosIrregulares[0];
+        const ultimoPunto = this.puntosCurvosIrregulares[this.puntosCurvosIrregulares.length - 1];
+        
+        // Punto de control inicial
+        pg.curveVertex(
+          ultimoPunto.x * 0.5, 
+          ultimoPunto.y * 0.5
+        );
+        
+        // Dibujar todos los puntos como puntos de curva
+        for (let v of this.puntosCurvosIrregulares) {
+          pg.curveVertex(v.x, v.y);
+        }
+        
+        // Punto de control final
+        pg.curveVertex(
+          primerPunto.x * 0.5, 
+          primerPunto.y * 0.5
+        );
+        
         pg.endShape(CLOSE);
         break;
         
@@ -584,8 +632,8 @@ class Particula {
       
       // Dibujar la forma según la configuración actual
       this._dibujarFormaRastro(pg, escala);
-      
-      pg.pop();
+    
+    pg.pop();
     }
   }
   
@@ -628,20 +676,62 @@ class Particula {
         break;
         
       case 'Curva':
+        // Guardar el estilo de relleno original
+        let savedFillCurve = pg.drawingContext.fillStyle;
+        // Deshabilitar el relleno y configurar el trazo
+        pg.noFill();
+        pg.stroke(this.color);
+        pg.strokeWeight((this.size / 8) * escala); // Grosor proporcional al tamaño y escala
+        
+        // Dibujar una curva Bézier suave
         pg.beginShape();
-        pg.curveVertex(-this.size / 2, 0);
-        pg.curveVertex(-this.size / 4, -this.size / 4);
-        pg.curveVertex(0, 0);
-        pg.curveVertex(this.size / 4, this.size / 4);
-        pg.curveVertex(this.size / 2, 0);
+        // Punto de control inicial (no se dibuja)
+        pg.curveVertex(-this.size, this.size / 2);
+        // Puntos de la curva
+        pg.curveVertex(-this.size / 2, this.size / 2);
+        pg.curveVertex(-this.size / 4, -this.size / 2);
+        pg.curveVertex(this.size / 4, this.size / 2);
+        pg.curveVertex(this.size / 2, -this.size / 2);
+        // Punto de control final (no se dibuja)
+        pg.curveVertex(this.size, -this.size / 2);
         pg.endShape();
+        
+        // Restaurar el fill original si es necesario
+        if (Config.gradienteParticulas) {
+          pg.drawingContext.fillStyle = savedFillCurve;
+        }
         break;
         
       case 'Irregular':
-        pg.beginShape();
-        for (let v of this.formaIrregular) {
-          pg.vertex(v.x, v.y);
+        // Si no se han generado los puntos, generarlos con una distribución más curva
+        if (!this.puntosCurvosIrregulares) {
+          this.generarPuntosCurvosIrregulares();
         }
+        
+        // Dibujar una forma irregular con curvas suaves
+        pg.beginShape();
+        
+        // Agregar puntos de control antes y después para suavizar los extremos
+        const primerPunto = this.puntosCurvosIrregulares[0];
+        const ultimoPunto = this.puntosCurvosIrregulares[this.puntosCurvosIrregulares.length - 1];
+        
+        // Punto de control inicial
+        pg.curveVertex(
+          ultimoPunto.x * 0.5, 
+          ultimoPunto.y * 0.5
+        );
+        
+        // Dibujar todos los puntos como puntos de curva
+        for (let v of this.puntosCurvosIrregulares) {
+          pg.curveVertex(v.x, v.y);
+        }
+        
+        // Punto de control final
+        pg.curveVertex(
+          primerPunto.x * 0.5, 
+          primerPunto.y * 0.5
+        );
+        
         pg.endShape(CLOSE);
         break;
         
@@ -653,6 +743,29 @@ class Particula {
         
       default:
         pg.ellipse(0, 0, this.size, this.size);
+    }
+  }
+
+  // Método para generar puntos curvos para forma irregular
+  generarPuntosCurvosIrregulares() {
+    this.puntosCurvosIrregulares = [];
+    
+    // Número de puntos para la forma
+    const numPuntos = 8;
+    
+    // Crear puntos distribuidos en un círculo con variaciones aleatorias
+    for (let i = 0; i < numPuntos; i++) {
+      // Ángulo distribuido uniformemente alrededor del círculo
+      const angulo = (i / numPuntos) * TWO_PI;
+      
+      // Radio con variación aleatoria para crear irregularidad
+      const radio = this.size / 2 * random(0.5, 1.2);
+      
+      // Coordenadas del punto
+      const x = cos(angulo) * radio;
+      const y = sin(angulo) * radio;
+      
+      this.puntosCurvosIrregulares.push(createVector(x, y));
     }
   }
 } 
