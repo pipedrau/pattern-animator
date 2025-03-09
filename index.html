@@ -130,22 +130,22 @@
       <h3>Grabar Video</h3>
       <p>Selecciona la duración del video:</p>
       <div class="selector-duracion">
-        <button onclick="UI.Grabacion.seleccionarDuracion(5)" class="duracion-btn active" data-duracion="5">5s</button>
-        <button onclick="UI.Grabacion.seleccionarDuracion(10)" class="duracion-btn" data-duracion="10">10s</button>
-        <button onclick="UI.Grabacion.seleccionarDuracion(15)" class="duracion-btn" data-duracion="15">15s</button>
+        <button onclick="UI.seleccionarDuracion(5)" class="duracion-btn active" data-duracion="5">5s</button>
+        <button onclick="UI.seleccionarDuracion(10)" class="duracion-btn" data-duracion="10">10s</button>
+        <button onclick="UI.seleccionarDuracion(15)" class="duracion-btn" data-duracion="15">15s</button>
       </div>
       
       <p>Formato de video:</p>
       <div class="selector-formato">
-        <button onclick="UI.Grabacion.seleccionarFormato('webm')" class="formato-btn active" data-formato="webm">WebM</button>
-        <button onclick="UI.Grabacion.seleccionarFormato('mp4')" class="formato-btn" data-formato="mp4">MP4</button>
+        <button onclick="UI.seleccionarFormato('webm')" class="formato-btn active" data-formato="webm">WebM</button>
+        <button onclick="UI.seleccionarFormato('mp4')" class="formato-btn" data-formato="mp4">MP4</button>
       </div>
       
       <div class="formato-nota">
         <p>La exportación a MP4 puede tardar más tiempo debido al proceso de codificación. Para videos largos, WebM puede ser más rápido.</p>
       </div>
       
-      <button id="iniciar-grabacion" onclick="UI.Grabacion.iniciarGrabacion()">Grabar</button>
+      <button id="iniciar-grabacion" onclick="UI.iniciarGrabacion()">Grabar</button>
       <div class="modal-grabacion-cerrar" onclick="UI.toggleGrabacionModal()">
         <span class="material-icons">close</span>
       </div>
