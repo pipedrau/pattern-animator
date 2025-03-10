@@ -592,7 +592,8 @@ const UI = {
     let desenfoqueLabel = createElement('p', 'Desenfoque: ' + Config.desenfoque);
     desenfoqueLabel.parent(seccion);
     
-    let desenfoqueSlider = createSlider(0, 5, Config.desenfoque, 0.1);
+    // Rango de 0 a 100 con incrementos de 0.1 para control preciso
+    let desenfoqueSlider = createSlider(0, 100, Config.desenfoque, 0.1);
     desenfoqueSlider.parent(seccion);
     desenfoqueSlider.input(() => {
       Config.desenfoque = desenfoqueSlider.value();

@@ -10,7 +10,7 @@ let cols, rows;
 let frameCounter = 0;
 
 function setup() {
-  console.log("=== Iniciando Pattern Animator - Versión Modular ===");
+  console.log("=== Iniciando Pattern Animator ===");
   
   // Crear canvas con las dimensiones de la configuración
   let canvas = createCanvas(Config.canvasWidth, Config.canvasHeight);
@@ -56,18 +56,16 @@ function draw() {
     ParticleSystem.actualizar(campo, cols, rows);
     ParticleSystem.dibujar(pg);
     
-    // 4. Mostrar escena en el canvas principal
-    image(pg, 0, 0);
-    
-    // 5. Aplicar todos los efectos visuales configurados
+    // 4. Aplicar todos los efectos visuales configurados
+    // Ahora VisualEffects.aplicarEfectos() dibuja el resultado final
     VisualEffects.aplicarEfectos();
     
-    // 6. Si hay una grabación MP4 en progreso, capturar el frame
+    // 5. Si hay una grabación MP4 en progreso, capturar el frame
     if (UI.grabacionEnProgreso && UI.grabacionFormato === 'mp4' && UI.mp4Encoder) {
       UI.procesarFrameMP4();
     }
     
-    // 7. Ajustar rendimiento para dispositivos móviles (cada 60 frames)
+    // 6. Ajustar rendimiento para dispositivos móviles (cada 60 frames)
     frameCounter++;
     if (frameCounter % 60 === 0 && typeof DeviceDetector !== 'undefined') {
       DeviceDetector.ajustarRendimiento();

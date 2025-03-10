@@ -62,65 +62,30 @@ const VisualEffects = {
     }
   },
   
-  // Aplicar ruido gráfico con rendimiento extremadamente optimizado
+  // Aplicar ruido gráfico como capa final
   aplicarRuidoGrafico() {
     if (Config.ruidoGrafico <= 0) return;
     
-    // Cachear el efecto de ruido con puntos prerenderizados
-    // Solo regenerar cuando cambie la configuración o cada 15 frames
-    if (!this._cachedNoiseFrame || 
-        this._cachedNoiseIntensity !== Config.ruidoGrafico || 
-        frameCount % 15 === 0) {
-      
-      // Actualizar valor cacheado
-      this._cachedNoiseIntensity = Config.ruidoGrafico;
-      this._cachedNoiseFrame = frameCount;
-      
-      // Limpiar la capa de ruido
+    // Limpiar la capa de ruido
     this.noiseLayer.clear();
-      
-      // Si la intensidad es muy baja, no hacer nada
-      if (Config.ruidoGrafico < 5) return;
-      
-      // Puntos de ruido prerenderizados
-      const intensidad = map(Config.ruidoGrafico, 0, 100, 0.1, 1.0);
-      
-      // Técnica de puntos aleatorios para simular ruido
-      // Usar modelo de densidad variable según intensidad
+    
+    // Si la intensidad es muy baja, no hacer nada
+    if (Config.ruidoGrafico < 5) return;
+    
+    // Configuración simple
     this.noiseLayer.noStroke();
-      
-      // Optimización: Usar puntos estratégicos en lugar de puntos completamente aleatorios
-      // Esto reduce la cantidad de operaciones de dibujo
-      
-      // Crear una cuadrícula de puntos posibles
-      const gridSize = map(Config.ruidoGrafico, 0, 100, 20, 5);
-      const cols = Math.ceil(width / gridSize);
-      const rows = Math.ceil(height / gridSize);
-      
-      // Para cada celda de la cuadrícula, decidir si dibujar un punto
-      for (let y = 0; y < rows; y++) {
-        for (let x = 0; x < cols; x++) {
-          // Probabilidad basada en intensidad
-          if (random() < intensidad * 0.3) {
-            // Posición con ligera variación aleatoria dentro de la celda
-            const posX = x * gridSize + random(-2, 2);
-            const posY = y * gridSize + random(-2, 2);
-            
-            // Tamaño y opacidad variables
-            const tamano = random(0.5, 2.5);
-            const opacidad = random(50, 200) * (intensidad * 0.8);
-            
-            // Color aleatorio para ruido más natural
-            this.noiseLayer.fill(random(180, 255), opacidad);
-            
-            // Usar rectángulos es más eficiente que círculos
-            this.noiseLayer.rect(posX, posY, tamano, tamano);
-          }
-        }
-      }
+    this.noiseLayer.fill(255, Config.ruidoGrafico);
+    
+    // Dibujamos puntos aleatorios proporcionales al tamaño del canvas
+    // Esta implementación es más simple y eficiente
+    const puntos = width * height * 0.01;
+    for (let i = 0; i < puntos; i++) {
+      const x = random(width);
+      const y = random(height);
+      this.noiseLayer.rect(x, y, 1, 1);
     }
     
-    // Aplicar el ruido encima de la escena con blend mode para mejor integración
+    // Aplicar el ruido encima de la escena
     blendMode(SCREEN);
     image(this.noiseLayer, 0, 0);
     blendMode(BLEND);
@@ -147,484 +112,362 @@ const VisualEffects = {
     return this.sceneBuffer;
   },
   
-  // Aplicar desenfoque optimizado como capa de ajuste
+  // Aplicar desenfoque altamente optimizado
   aplicarDesenfoque() {
     if (Config.desenfoque <= 0) return;
     
-    // Crear o reutilizar el buffer de desenfoque
-    if (!this._blurBuffer) {
-      // Para mayor rendimiento, usamos un buffer más pequeño
-      this._blurBuffer = createGraphics(Math.floor(width * 0.5), Math.floor(height * 0.5));
+    // La clave de la optimización es usar una resolución extremadamente baja para el desenfoque
+    // y luego escalar de vuelta - técnica usada en glassmorphism en sitios web modernos
+    
+    // Calcular la escala basada en la intensidad del desenfoque
+    // Más desenfoque = menor resolución = mejor rendimiento
+    const blurScale = map(Config.desenfoque, 1, 100, 0.5, 0.1);
+    const blurWidth = Math.max(8, Math.floor(width * blurScale));
+    const blurHeight = Math.max(8, Math.floor(height * blurScale));
+    
+    // Crear o redimensionar buffer de desenfoque según sea necesario
+    if (!this._blurBuffer || 
+        this._blurBuffer.width !== blurWidth || 
+        this._blurBuffer.height !== blurHeight) {
+      if (this._blurBuffer) this._blurBuffer.remove();
+      this._blurBuffer = createGraphics(blurWidth, blurHeight);
     }
     
-    // Calcular la intensidad del desenfoque
-    const blurAmount = map(Config.desenfoque, 0, 10, 5, 80);
-    
-    // Recalcular solo cuando cambie la intensidad o cada 10 frames para animaciones
-    if (this._cachedBlurValue !== Config.desenfoque || !this._blurTexture || frameCount % 10 === 0) {
+    // Sistema de caché inteligente: solo actualizar cuando sea necesario
+    // Esto evita recalcular el desenfoque cada frame
+    if (!this._cachedBlurValue || 
+        this._cachedBlurValue !== Config.desenfoque || 
+        frameCount % 10 === 0) { // Actualizar periódicamente para animaciones
+      
+      // Guardar valor para caché
       this._cachedBlurValue = Config.desenfoque;
       
-      // Limpiar el buffer
+      // Copiar la imagen actual al buffer pequeño (esto ya produce un primer nivel de desenfoque)
       this._blurBuffer.clear();
+      this._blurBuffer.image(this.effectsBuffer, 0, 0, blurWidth, blurHeight);
       
-      // Copiar la escena actual pero a menor resolución para rendimiento
-      this._blurBuffer.image(get(), 0, 0, this._blurBuffer.width, this._blurBuffer.height);
-      
-      // Simular desenfoque mediante superposición de imágenes ligeramente desplazadas
-      // Esta técnica es mucho más eficiente que usar filter(BLUR)
-      if (!this._blurTexture) {
-        this._blurTexture = createGraphics(this._blurBuffer.width, this._blurBuffer.height);
+      // Aplicar desenfoque adicional dependiendo de la intensidad
+      // Para valores bajos, el reescalado ya proporciona suficiente desenfoque
+      if (Config.desenfoque > 20) {
+        this._blurBuffer.filter(BLUR, map(Config.desenfoque, 20, 100, 1, 3));
       }
-      
-      // Guardar imagen original
-      this._blurTexture.clear();
-      this._blurTexture.image(this._blurBuffer, 0, 0);
-      
-      // Limpiar buffer para aplicar el efecto
-      this._blurBuffer.clear();
-      
-      // Intensidad basada en la configuración
-      const desplazamiento = map(Config.desenfoque, 0, 10, 1, 4);
-      
-      // Simular desenfoque usando superposición de imágenes con poca opacidad
-      this._blurBuffer.blendMode(BLEND);
-      this._blurBuffer.tint(255, 255, 255, 255); // Imagen original a full opacidad
-      this._blurBuffer.image(this._blurTexture, 0, 0);
-      
-      // Dibujar múltiples copias con poca opacidad y desplazamiento
-      this._blurBuffer.tint(255, 255, 255, 50); // Baja opacidad para las copias
-      
-      // Menos iteraciones = mejor rendimiento
-      for (let i = 1; i <= 3; i++) {
-        const offset = i * desplazamiento;
-        // 8 direcciones para simular desenfoque radial
-        this._blurBuffer.image(this._blurTexture, offset, 0);
-        this._blurBuffer.image(this._blurTexture, -offset, 0);
-        this._blurBuffer.image(this._blurTexture, 0, offset);
-        this._blurBuffer.image(this._blurTexture, 0, -offset);
-      }
-      
-      this._blurBuffer.noTint();
     }
     
-    // Aplicar el desenfoque escalándolo de vuelta al tamaño completo
-    blendMode(BLEND);
-    
-    // La opacidad controla la intensidad del efecto
-    tint(255, blurAmount);
-    image(this._blurBuffer, 0, 0, width, height);
-    noTint();
+    // Dibujar el desenfoque sobre el buffer de efectos
+    // Usar el modo BLEND para preservar detalles
+    this.effectsBuffer.clear();
+    this.effectsBuffer.image(this._blurBuffer, 0, 0, width, height);
   },
   
-  // Aplicar efecto pixelado optimizado
+  // Aplicar efecto de pixelado
   aplicarPixelado() {
-    if (!Config.pixeladoActivo || Config.pixeladoTamano <= 1) return;
+    // Evitar procesamiento si el tamaño es muy pequeño
+    if (Config.pixeladoTamano <= 1) return;
     
-    // Cachear el efecto pixelado para no recalcularlo en cada frame
-    if (this._cachedPixelSize !== Config.pixeladoTamano || !this._pixelBuffer || frameCount % 15 === 0) {
-      this._cachedPixelSize = Config.pixeladoTamano;
-      
-      // Crear buffer si no existe, o redimensionarlo si es necesario
-      if (!this._pixelBuffer || this._pixelBuffer.width !== width || this._pixelBuffer.height !== height) {
-        if (this._pixelBuffer) this._pixelBuffer.remove();
-        this._pixelBuffer = createGraphics(width, height);
-      }
-      
-      // Calcular el tamaño del píxel (entre 2 y 32)
-      const pixelSize = Math.floor(map(Config.pixeladoTamano, 1, 100, 2, 32));
-      
-      // Obtener la imagen actual para pixelarla
-      const img = get();
-      
-      // Limpiar el buffer
-      this._pixelBuffer.clear();
-      this._pixelBuffer.noStroke();
-      
-      // Dibujar pixeles grandes sobre la imagen original
-      // Optimización: reducir la cantidad de operaciones de dibujo
-      const stepsX = Math.ceil(width / pixelSize);
-      const stepsY = Math.ceil(height / pixelSize);
-      
-      for (let y = 0; y < stepsY; y++) {
-        for (let x = 0; x < stepsX; x++) {
-          // Coordenadas en la imagen original
-          const srcX = x * pixelSize;
-          const srcY = y * pixelSize;
-          
-          // Obtener el color de un punto en el centro del píxel grande
-          // para mejor representación visual
-          const sampleX = Math.min(srcX + Math.floor(pixelSize/2), width-1);
-          const sampleY = Math.min(srcY + Math.floor(pixelSize/2), height-1);
-          
-          // Obtener el color usando get() que es más preciso que los pixels[]
-          const col = img.get(sampleX, sampleY);
-          
-          // Dibujar un rectángulo con ese color
-          this._pixelBuffer.fill(col);
-          
-          // Asegurarse de que no dibuje fuera del canvas
-          const drawWidth = Math.min(pixelSize, width - srcX);
-          const drawHeight = Math.min(pixelSize, height - srcY);
-          
-          this._pixelBuffer.rect(srcX, srcY, drawWidth, drawHeight);
-        }
-      }
-      
-      // Liberar memoria
-      img.remove();
+    // Crear un buffer temporal con menor resolución
+    const pixelSize = Math.max(1, Math.floor(Config.pixeladoTamano));
+    const tempWidth = Math.ceil(width / pixelSize);
+    const tempHeight = Math.ceil(height / pixelSize);
+    
+    // Usar un buffer temporal para reducir la resolución
+    if (!this._pixelBuffer || this._pixelBuffer.width !== tempWidth || this._pixelBuffer.height !== tempHeight) {
+      if (this._pixelBuffer) this._pixelBuffer.remove();
+      this._pixelBuffer = createGraphics(tempWidth, tempHeight);
     }
     
-    // Aplicar el efecto pixelado
-    image(this._pixelBuffer, 0, 0);
+    // Copiar el buffer de efectos a menor resolución
+    this._pixelBuffer.clear();
+    this._pixelBuffer.image(this.effectsBuffer, 0, 0, tempWidth, tempHeight);
+    
+    // Dibujar la imagen de baja resolución de vuelta al buffer de efectos, ampliándola
+    this.effectsBuffer.clear();
+    this.effectsBuffer.noSmooth(); // Desactivar el suavizado para un efecto pixelado más notorio
+    this.effectsBuffer.image(this._pixelBuffer, 0, 0, width, height);
+    this.effectsBuffer.smooth(); // Restaurar el suavizado para otros efectos
   },
   
-  // Aplicar efecto bloom (resplandor) altamente optimizado
+  // Aplicar efecto bloom (resplandor) optimizado
   aplicarBloom() {
-    if (!Config.bloomActivo || Config.bloomIntensidad <= 0) return;
+    if (Config.bloomIntensidad <= 0) return;
     
-    // Usar un buffer más pequeño para mejorar rendimiento
-    const bloomScale = 0.25; // Sólo 1/4 del tamaño original = mucho más rápido
-    
-    // Optimización: cachear el efecto bloom y solo recalcularlo cuando cambien los parámetros
-    // o cada 30 frames para animaciones (menos frecuente = mejor rendimiento)
-    const recalcular = !this._bloomBuffer || 
-                       this._cachedBloomIntensity !== Config.bloomIntensidad ||
-                       this._cachedBloomUmbral !== Config.bloomUmbral ||
-                       this._cachedBloomColor !== Config.bloomColor ||
-                       frameCount % 30 === 0;
-    
-    if (recalcular) {
-      // Actualizar valores cacheados
-      this._cachedBloomIntensity = Config.bloomIntensidad;
-      this._cachedBloomUmbral = Config.bloomUmbral;
-      this._cachedBloomColor = Config.bloomColor;
-      
-      // Crear buffer a menor resolución si no existe
-      if (!this._bloomBuffer) {
-        this._bloomBuffer = createGraphics(Math.floor(width * bloomScale), Math.floor(height * bloomScale));
-      }
-      
-      // Limpiar el buffer antes de dibujar
-      this._bloomBuffer.clear();
-      
-      // Obtener la imagen actual y reducirla a la resolución del buffer
-      const currentImg = get();
-      this._bloomBuffer.image(currentImg, 0, 0, this._bloomBuffer.width, this._bloomBuffer.height);
-      
-      // Aplicar umbral para extraer áreas brillantes (más rápido que manipular píxeles)
-      // En lugar de procesamiento de píxeles, usar un shader simulado con blend modes
-      
-      const thresholdBuffer = createGraphics(this._bloomBuffer.width, this._bloomBuffer.height);
-      
-      // Calcular umbral (0-1)
-      const umbral = map(Config.bloomUmbral, 0, 100, 0.3, 0.9);
-      
-      // Aplicar umbral usando una técnica de ajuste de niveles
-      thresholdBuffer.image(this._bloomBuffer, 0, 0);
-      
-      // Limpiar el buffer original
-      this._bloomBuffer.clear();
-      
-      // Configurar buffer para threshold
-      this._bloomBuffer.push();
-      this._bloomBuffer.blendMode(SCREEN); // Usar SCREEN para preservar áreas brillantes
-      
-      // Ajustar contraste para enfatizar áreas brillantes y eliminar oscuras
-      for (let i = 0; i < 3; i++) {
-        // Intensidad basada en umbral
-        let opacity = map(umbral, 0.3, 0.9, 150, 50);
-        this._bloomBuffer.tint(255, opacity);
-        this._bloomBuffer.image(thresholdBuffer, 0, 0);
-      }
-      
-      this._bloomBuffer.pop();
-      
-      // Aplicar un desenfoque simple al resultado
-      // Usar técnica de desplazamiento en lugar de filter(BLUR)
-      const blurBuffer = createGraphics(this._bloomBuffer.width, this._bloomBuffer.height);
-      blurBuffer.image(this._bloomBuffer, 0, 0);
-      
-      this._bloomBuffer.clear();
-      
-      // Intensidad basada en configuración
-      const blurAmount = map(Config.bloomIntensidad, 0, 100, 1, 3);
-      
-      // Aplicar blur mediante superposición con desplazamiento
-      this._bloomBuffer.image(blurBuffer, 0, 0); // Original
-      
-      this._bloomBuffer.blendMode(SCREEN);
-      for (let i = 1; i <= 2; i++) {
-        const offset = i * blurAmount;
-        this._bloomBuffer.tint(255, 50);
-        
-        // 4 direcciones principales para optimizar rendimiento
-        this._bloomBuffer.image(blurBuffer, offset, 0);
-        this._bloomBuffer.image(blurBuffer, -offset, 0);
-        this._bloomBuffer.image(blurBuffer, 0, offset);
-        this._bloomBuffer.image(blurBuffer, 0, -offset);
-      }
-      
-      // Liberar memoria
-      thresholdBuffer.remove();
-      blurBuffer.remove();
-      currentImg.remove();
+    // Crear un buffer de baja resolución para mejor rendimiento
+    if (!this._bloomBuffer) {
+      this._bloomBuffer = createGraphics(width/4, height/4);
     }
     
-    // Aplicar el bloom con el color configurado
-    const bloomColor = color(Config.bloomColor);
-    const bloomAlpha = map(Config.bloomIntensidad, 0, 100, 50, 200);
+    // Copiar la imagen actual al buffer de bloom a menor resolución
+    this._bloomBuffer.clear();
+    this._bloomBuffer.image(this.effectsBuffer, 0, 0, this._bloomBuffer.width, this._bloomBuffer.height);
     
-    // Usar SCREEN para mezclar áreas brillantes correctamente
-    blendMode(SCREEN);
-    tint(red(bloomColor), green(bloomColor), blue(bloomColor), bloomAlpha);
+    // Aplicar desenfoque para crear el efecto de resplandor
+    // Una sola pasada con valor alto es más eficiente que múltiples pasadas
+    this._bloomBuffer.filter(BLUR, map(Config.bloomIntensidad, 0, 100, 4, 12));
     
-    // Dibujar el bloom escalado al tamaño completo
-    image(this._bloomBuffer, 0, 0, width, height);
+    // Ajustar el color del bloom si es diferente al blanco
+    if (Config.bloomColor !== '#FFFFFF') {
+      this._bloomBuffer.tint(color(Config.bloomColor));
+    }
     
-    // Restaurar configuración
-    blendMode(BLEND);
-    noTint();
+    // Mezclar el bloom con la imagen original
+    const intensidad = map(Config.bloomIntensidad, 0, 100, 100, 200);
+    
+    // Dibujar el bloom sobre el buffer de efectos
+    this.effectsBuffer.blendMode(ADD);  // ADD es mejor que SCREEN para el efecto bloom
+    this.effectsBuffer.tint(255, intensidad);
+    this.effectsBuffer.image(this._bloomBuffer, 0, 0, width, height);
+    this.effectsBuffer.blendMode(BLEND);
+    this.effectsBuffer.noTint();
   },
   
-  // Aplicar efecto semitono mejorado
+  // Aplicar efecto de semitono optimizado
   aplicarSemitono() {
-    // Verificar si el efecto está activo y la escala es mayor que cero
-    if (!Config.semitonoActivo || Config.semitonoEscala <= 0) return;
+    if (Config.semitonoEscala <= 0) return;
     
-    // Calcular el tamaño de los puntos según la escala (0-1)
-    // Usar un rango más adecuado para preservar la relación de aspecto
-    const pointSize = map(Config.semitonoEscala, 0, 1, 3, 20);
+    // Usar un tamaño de punto adaptado a la escala
+    const pointSize = map(Config.semitonoEscala, 0, 1, 4, 12);
     
-    // Crear el buffer si no existe
-    if (!this.semitonoBuffer) {
-      this.semitonoBuffer = createGraphics(width, height);
+    // Crear un buffer de baja resolución para mejor rendimiento
+    if (!this._semitonoBuffer) {
+      this._semitonoBuffer = createGraphics(width, height);
     }
     
     // Limpiar el buffer
-    this.semitonoBuffer.clear();
-    this.semitonoBuffer.background(255);
+    this._semitonoBuffer.clear();
+    this._semitonoBuffer.background(255);
     
-    // Obtener la imagen actual
-    const img = get();
+    // Reducir la cantidad de puntos mediante un paso más grande
+    const step = Math.floor(pointSize);
+    const cols = Math.ceil(width / step);
+    const rows = Math.ceil(height / step);
     
-    // Usar una cuadrícula uniforme para evitar deformación
-    const cols = Math.floor(width / pointSize);
-    const rows = Math.floor(height / pointSize);
-    const cellWidth = width / cols;
-    const cellHeight = height / rows;
+    // Configurar el estilo de dibujo
+    this._semitonoBuffer.noStroke();
+    this._semitonoBuffer.fill(0);
     
-    // Dibujar puntos basados en la luminosidad de la imagen original
-    this.semitonoBuffer.noStroke();
-    this.semitonoBuffer.fill(0);
+    // Optimización: copiar datos una sola vez
+    const tempBuffer = createGraphics(width, height);
+    tempBuffer.image(this.effectsBuffer, 0, 0);
+    tempBuffer.loadPixels();
     
-    for (let y = 0; y < rows; y++) {
-      for (let x = 0; x < cols; x++) {
-        // Posición central de la celda
-        const posX = x * cellWidth + cellWidth / 2;
-        const posY = y * cellHeight + cellHeight / 2;
+    // Dibujar puntos basados en la luminosidad
+    for (let y = 0; y < rows; y += 1) {
+      for (let x = 0; x < cols; x += 1) {
+        // Calcular posición
+        const posX = x * step;
+        const posY = y * step;
         
-        // Muestrear el color en esa posición
-        const c = img.get(Math.floor(posX), Math.floor(posY));
+        // Si está fuera del canvas, saltar
+        if (posX >= width || posY >= height) continue;
         
-        // Calcular el brillo (0-255)
-        const brightness = (red(c) + green(c) + blue(c)) / 3;
+        // Obtener color del pixel - más eficiente que get()
+        const index = (posY * width + posX) * 4;
+        if (index >= tempBuffer.pixels.length) continue;
         
-        // Calcular el tamaño del punto (invertido: más oscuro = punto más grande)
-        const dotSize = map(brightness, 0, 255, pointSize * 0.95, pointSize * 0.05);
+        const r = tempBuffer.pixels[index];
+        const g = tempBuffer.pixels[index + 1];
+        const b = tempBuffer.pixels[index + 2];
         
-        // Dibujar el punto si tiene un tamaño visible
-        if (dotSize > 0) {
-          this.semitonoBuffer.ellipse(posX, posY, dotSize, dotSize);
+        // Calcular brillo
+        const brightness = (r + g + b) / 3;
+        
+        // Tamaño del punto basado en brillo (invertido)
+        const dotSize = map(brightness, 0, 255, pointSize * 0.9, pointSize * 0.1);
+        
+        // Dibujar solo si tiene tamaño visible (optimización)
+        if (dotSize > 0.5) {
+          this._semitonoBuffer.ellipse(posX, posY, dotSize, dotSize);
         }
       }
     }
     
-    // Dibujar el buffer de semitono en la pantalla
-    image(this.semitonoBuffer, 0, 0);
-    
     // Liberar memoria
-    img.remove();
+    tempBuffer.remove();
+    
+    // Aplicar el resultado al buffer de efectos
+    this.effectsBuffer.clear();
+    this.effectsBuffer.image(this._semitonoBuffer, 0, 0);
   },
   
-  // Aplicar aberración cromática (completamente rediseñado)
+  // Aplicar aberración cromática mejorada con efecto radial
   aplicarAberracionCromatica() {
-    // Verificar si el efecto está activo y la intensidad es mayor que cero
-    if (!Config.aberracionActiva || Config.aberracionIntensidad <= 0) return;
+    if (Config.aberracionIntensidad <= 0) return;
     
-    // Crear o reutilizar buffer de aberración a menor escala para rendimiento
-    const scale = 0.5; // Usar resolución reducida para mejor rendimiento
-    
-    if (!this._aberrationBuffer || 
-        this._aberrationBuffer.width !== Math.floor(width * scale) ||
-        this._aberrationBuffer.height !== Math.floor(height * scale)) {
-      if (this._aberrationBuffer) this._aberrationBuffer.remove();
-      this._aberrationBuffer = createGraphics(Math.floor(width * scale), Math.floor(height * scale));
+    // Crear buffer temporal si no existe
+    if (!this._aberrationBuffer) {
+      this._aberrationBuffer = createGraphics(width, height);
     }
     
-    // Cachear parámetros y recalcular solo cuando cambien o cada 15 frames
-    if (this._cachedAberrationParams !== `${Config.aberracionIntensidad}-${Config.aberracionAnimada}-${frameCount % 15}`) {
-      this._cachedAberrationParams = `${Config.aberracionIntensidad}-${Config.aberracionAnimada}-${frameCount % 15}`;
-      
-      // Calcular desplazamiento máximo basado en intensidad
-      const maxOffset = map(Config.aberracionIntensidad, 0, 100, 1, 15);
-      
-      // Calcular desplazamientos para cada canal (R, G, B)
-      let offsetX, offsetY;
-      
-      if (Config.aberracionAnimada) {
-        // Actualizar ángulo para animación
-        if (!this._aberrationAngle) this._aberrationAngle = 0;
-        this._aberrationAngle += 0.03;
+    // Crear buffers separados para cada canal si no existen
+    if (!this._redChannel) {
+      this._redChannel = createGraphics(width, height);
+      this._blueChannel = createGraphics(width, height);
+    }
+    
+    // Calcular desplazamiento basado en intensidad - más exagerado para efecto notorio
+    const maxOffset = map(Config.aberracionIntensidad, 0, 100, 2, 20);
+    
+    // Preparar canales separados
+    this._redChannel.clear();
+    this._blueChannel.clear();
+    
+    // Copiar la imagen original a los canales de color
+    this._redChannel.image(this.effectsBuffer, 0, 0);
+    this._blueChannel.image(this.effectsBuffer, 0, 0);
+    
+    // Aplicar transformación radial a los canales rojo y azul
+    // El canal verde se queda en la posición original
+    this._redChannel.loadPixels();
+    this._blueChannel.loadPixels();
+    this.effectsBuffer.loadPixels();
+    
+    // Solo procesamos una fracción de los píxeles para mantener el rendimiento
+    // Saltar píxeles y usar una cuadrícula más espaciada
+    const skipFactor = 2; // Procesar 1 de cada 2 píxeles
+    
+    // Centro de la imagen para el efecto radial
+    const centerX = width / 2;
+    const centerY = height / 2;
+    
+    // Generar un mapa de desplazamiento más exagerado en los bordes
+    for (let y = 0; y < height; y += skipFactor) {
+      for (let x = 0; x < width; x += skipFactor) {
+        // Calcular distancia desde el centro (normalizada de 0 a 1)
+        const dx = (x - centerX) / (width / 2);
+        const dy = (y - centerY) / (height / 2);
+        const distFactor = Math.min(1, Math.sqrt(dx*dx + dy*dy));
         
-        // Movimiento circular para la animación
-        offsetX = cos(this._aberrationAngle) * maxOffset;
-        offsetY = sin(this._aberrationAngle) * maxOffset * 0.5;
-      } else {
-        // Desplazamiento estático
-        offsetX = maxOffset;
-        offsetY = 0;
+        // Desplazamiento radial - más intenso en los bordes
+        const offsetFactor = distFactor * maxOffset;
+        
+        // Ángulo desde el centro
+        const angle = Math.atan2(dy, dx);
+        
+        // Calcular desplazamientos con un componente radial
+        const redOffsetX = Math.cos(angle) * offsetFactor;
+        const redOffsetY = Math.sin(angle) * offsetFactor;
+        const blueOffsetX = -redOffsetX;
+        const blueOffsetY = -redOffsetY;
+        
+        // Posiciones de destino para los canales rojo y azul
+        const redX = Math.floor(x + redOffsetX);
+        const redY = Math.floor(y + redOffsetY);
+        const blueX = Math.floor(x + blueOffsetX);
+        const blueY = Math.floor(y + blueOffsetY);
+        
+        // Verificar límites
+        if (redX >= 0 && redX < width && redY >= 0 && redY < height &&
+            blueX >= 0 && blueX < width && blueY >= 0 && blueY < height) {
+          // Índices en los arrays de píxeles
+          const srcIdx = (y * width + x) * 4;
+          const redIdx = (redY * width + redX) * 4;
+          const blueIdx = (blueY * width + blueX) * 4;
+          
+          // Aplicar componente rojo al canal rojo
+          this._redChannel.pixels[redIdx] = this.effectsBuffer.pixels[srcIdx];     // R
+          this._redChannel.pixels[redIdx + 1] = 0;                                // G
+          this._redChannel.pixels[redIdx + 2] = 0;                                // B
+          
+          // Aplicar componente azul al canal azul
+          this._blueChannel.pixels[blueIdx] = 0;                                  // R
+          this._blueChannel.pixels[blueIdx + 1] = 0;                              // G
+          this._blueChannel.pixels[blueIdx + 2] = this.effectsBuffer.pixels[srcIdx + 2]; // B
+        }
       }
-      
-      // Obtener la imagen actual y escalarla al tamaño del buffer
-      const currentImg = get();
-      
-      // Limpiar buffer para el nuevo frame
-      this._aberrationBuffer.clear();
-      
-      // Separar y desplazar canales de color
-      // Canal rojo - desplazado positivamente
-      this._aberrationBuffer.push();
-      this._aberrationBuffer.blendMode(ADD);
-      this._aberrationBuffer.tint(255, 0, 0);
-      this._aberrationBuffer.image(currentImg, offsetX * scale, offsetY * scale, 
-                                   this._aberrationBuffer.width, this._aberrationBuffer.height);
-      
-      // Canal verde - centrado
-      this._aberrationBuffer.tint(0, 255, 0);
-      this._aberrationBuffer.image(currentImg, 0, 0, 
-                                   this._aberrationBuffer.width, this._aberrationBuffer.height);
-      
-      // Canal azul - desplazado negativamente
-      this._aberrationBuffer.tint(0, 0, 255);
-      this._aberrationBuffer.image(currentImg, -offsetX * scale, -offsetY * scale, 
-                                   this._aberrationBuffer.width, this._aberrationBuffer.height);
-      this._aberrationBuffer.pop();
-      
-      // Liberar memoria
-      currentImg.remove();
     }
     
-    // Aplicar el efecto de aberración cromática
-    blendMode(BLEND);
-    image(this._aberrationBuffer, 0, 0, width, height);
+    // Actualizar los píxeles modificados
+    this._redChannel.updatePixels();
+    this._blueChannel.updatePixels();
+    
+    // Combinar los canales con modo ADD
+    this._aberrationBuffer.clear();
+    
+    // Canal verde (sin desplazamiento) - lo dejamos en la imagen original
+    this._aberrationBuffer.image(this.effectsBuffer, 0, 0);
+    
+    // Mezclar canales rojo y azul
+    this._aberrationBuffer.blendMode(ADD);
+    this._aberrationBuffer.tint(255, 0, 0, 200); // Rojo
+    this._aberrationBuffer.image(this._redChannel, 0, 0);
+    this._aberrationBuffer.tint(0, 0, 255, 200); // Azul
+    this._aberrationBuffer.image(this._blueChannel, 0, 0);
+    this._aberrationBuffer.blendMode(BLEND);
+    this._aberrationBuffer.noTint();
+    
+    // Aplicar el resultado al buffer de efectos
+    this.effectsBuffer.clear();
+    this.effectsBuffer.image(this._aberrationBuffer, 0, 0);
   },
   
-  // Aplicar efecto glitch
+  // Aplicar efecto glitch simplificado y visible
   aplicarGlitch() {
-    if (!Config.glitchActivo || Config.glitchIntensidad <= 0) return;
+    if (Config.glitchIntensidad <= 0) return;
     
-    // Parámetros basados en la intensidad
-    const intensity = map(Config.glitchIntensidad, 0, 100, 0.1, 1.0);
-    
-    // Crear buffer si no existe
+    // Crear buffer temporal si no existe
     if (!this._glitchBuffer) {
       this._glitchBuffer = createGraphics(width, height);
     }
     
-    // Actualizar el efecto cada pocos frames para simular "error digital"
-    // o cuando cambia la intensidad
-    if (this._cachedGlitchIntensity !== Config.glitchIntensidad || 
-        frameCount % 15 === 0 || 
-        random() < intensity * 0.3) {
-      
-      this._cachedGlitchIntensity = Config.glitchIntensidad;
-      
-      // Obtener la imagen actual
-      const currentImg = get();
-      
-      // Limpiar el buffer
+    // Intensidad del efecto
+    const intensidad = map(Config.glitchIntensidad, 0, 100, 0.2, 1.0);
+    
+    // Actualizar efecto cada cierto tiempo o por azar
+    if (frameCount % 10 === 0 || random() < intensidad * 0.2) {
+      // Copiar el buffer de efectos al buffer de glitch
       this._glitchBuffer.clear();
-      this._glitchBuffer.image(currentImg, 0, 0);
+      this._glitchBuffer.image(this.effectsBuffer, 0, 0);
       
-      // Simular glitch con fragmentos de imagen desplazados
-      // Número de fragmentos de glitch basado en intensidad
-      const numGlitches = Math.floor(map(intensity, 0.1, 1.0, 2, 10));
+      // Efecto 1: Líneas horizontales desplazadas (más visibles)
+      const numLines = floor(random(3, 10) * intensidad);
       
-      if (random() < intensity * 0.8) {
-        // Técnica 1: Cortes horizontales con desplazamiento
-        for (let i = 0; i < numGlitches; i++) {
-          if (random() < intensity) {
-            // Altura y posición aleatorias para el corte
-            const glitchHeight = random(5, 20) * intensity;
-            const y = random(height - glitchHeight);
-            
-            // Desplazamiento aleatorio
-            const xOffset = random(-20, 20) * intensity;
-            
-            // Cortar una sección horizontal y redibujarla con desplazamiento
-            const stripImg = this._glitchBuffer.get(0, y, width, glitchHeight);
-            
-            // Limpiar la sección original
-            this._glitchBuffer.fill(0);
-            this._glitchBuffer.noStroke();
-            this._glitchBuffer.rect(0, y, width, glitchHeight);
-            
-            // Dibujar la sección con desplazamiento
-            this._glitchBuffer.image(stripImg, xOffset, y);
-          }
-        }
+      for (let i = 0; i < numLines; i++) {
+        const y = random(height);
+        const h = random(5, 20) * intensidad;
+        const xOffset = random(-30, 30) * intensidad;
+        
+        // Cortar y desplazar una línea horizontal
+        const lineImg = this._glitchBuffer.get(0, y, width, h);
+        this._glitchBuffer.fill(0, 100); // Dejar un rastro negro semitransparente
+        this._glitchBuffer.rect(0, y, width, h);
+        this._glitchBuffer.image(lineImg, xOffset, y);
       }
       
-      // Técnica 2: Desplazamiento de canales de color (RGB split)
-      if (random() < intensity * 0.6) {
-        this._glitchBuffer.loadPixels();
+      // Efecto 2: Desplazamiento de colores RGB más visible
+      if (random() < intensidad * 0.7) {
+        // Crear una copia con desplazamiento RGB
+        const tempImg = this._glitchBuffer.get();
         
-        // Evitar procesar todos los píxeles - sólo algunos puntos aleatorios
-        const sampleSize = Math.max(1, Math.floor(width * height * 0.01));
+        // Desplazar canal rojo
+        this._glitchBuffer.tint(255, 0, 0, 150);
+        this._glitchBuffer.image(tempImg, random(-10, 10) * intensidad, 0);
         
-        for (let i = 0; i < sampleSize; i++) {
-          const x = Math.floor(random(width));
-          const y = Math.floor(random(height));
-          const index = (y * width + x) * 4;
-          
-          // Intercambiar canales (R, G, B) aleatoriamente
-          if (random() < intensity * 0.3) {
-            const temp = this._glitchBuffer.pixels[index]; // R
-            this._glitchBuffer.pixels[index] = this._glitchBuffer.pixels[index + 2]; // B -> R
-            this._glitchBuffer.pixels[index + 2] = temp; // R -> B
-          }
-        }
+        // Desplazar canal azul
+        this._glitchBuffer.tint(0, 0, 255, 150);
+        this._glitchBuffer.image(tempImg, random(-10, 10) * intensidad, 0);
         
-        this._glitchBuffer.updatePixels();
+        this._glitchBuffer.noTint();
       }
       
-      // Técnica 3: Areas de "error" (cuadros aleatorios)
-      if (random() < intensity * 0.4) {
-        const numAreas = Math.floor(random(1, 5) * intensity);
-        
-        for (let i = 0; i < numAreas; i++) {
-          const areaSize = random(10, 50) * intensity;
-          const x = random(width - areaSize);
-          const y = random(height - areaSize);
+      // Efecto 3: Bloques de "corrupción digital"
+      const numBlocks = floor(random(2, 6) * intensidad);
+      
+      for (let i = 0; i < numBlocks; i++) {
+        if (random() < intensidad * 0.5) {
+          const blockX = random(width);
+          const blockY = random(height);
+          const blockW = random(20, 80) * intensidad;
+          const blockH = random(5, 20);
           
-          // Color aleatorio para el área de error
-          const r = random(255);
-          const g = random(255);
-          const b = random(255);
-          const a = random(100, 200) * intensity;
-          
-          this._glitchBuffer.fill(r, g, b, a);
+          // Usar colores vivos para que sea más visible
+          this._glitchBuffer.fill(random(255), random(255), random(255), 200);
           this._glitchBuffer.noStroke();
-          this._glitchBuffer.rect(x, y, areaSize, areaSize);
+          this._glitchBuffer.rect(blockX, blockY, blockW, blockH);
         }
       }
-      
-      // Liberar memoria
-      currentImg.remove();
     }
     
-    // Aplicar el efecto glitch
-    image(this._glitchBuffer, 0, 0);
+    // Aplicar el efecto al buffer principal
+    this.effectsBuffer.image(this._glitchBuffer, 0, 0);
   },
   
   // Método auxiliar para la distorsión RGB en el efecto glitch
@@ -657,44 +500,51 @@ const VisualEffects = {
     }
   },
   
-  // Aplicar todos los efectos en secuencia
+  // Aplicar todos los efectos en secuencia como post-procesado
   aplicarEfectos() {
-    // Limpiar estado del render
-    blendMode(BLEND);
-    noTint();
+    // Preparar el buffer de efectos
+    this.effectsBuffer.clear();
+    this.effectsBuffer.image(this.sceneBuffer, 0, 0);
     
-    // Aplicar efectos en orden optimizado para calidad visual
+    // Ahora todos los efectos se aplican al buffer de efectos, no directamente al canvas
+    // Esto significa que procesamos una sola imagen en lugar de cada partícula individual
     
-    // 1. Primero el pixelado (afecta a toda la imagen)
+    // Orden optimizado para mejor resultado visual y rendimiento
+    
+    // 1. Primero el pixelado (afecta la base de la imagen)
     if (Config.pixeladoActivo && Config.pixeladoTamano > 1) {
       this.aplicarPixelado();
     }
     
-    // 2. Semitono (incompatible con pixelado, solo aplicar si no hay pixelado)
+    // 2. Glitch (mejor aplicarlo temprano para que los demás efectos lo procesen)
+    if (Config.glitchActivo && Config.glitchIntensidad > 0) {
+      this.aplicarGlitch();
+    }
+    
+    // 3. Semitono (incompatible con pixelado)
     if (Config.semitonoActivo && Config.semitonoEscala > 0 && 
         !(Config.pixeladoActivo && Config.pixeladoTamano > 1)) {
       this.aplicarSemitono();
     }
     
-    // 3. Bloom (mejor aplicarlo antes que el desenfoque para que las luces brillen)
-    if (Config.bloomActivo && Config.bloomIntensidad > 0) {
-      this.aplicarBloom();
-    }
-    
-    // 4. Aberración cromática (mejor antes del desenfoque para que se vea más definida)
+    // 4. Aberración cromática (antes del desenfoque para preservar definición)
     if (Config.aberracionActiva && Config.aberracionIntensidad > 0) {
       this.aplicarAberracionCromatica();
     }
     
-    // 5. Desenfoque (efecto sutil)
+    // 5. Desenfoque
     if (Config.desenfoque > 0) {
       this.aplicarDesenfoque();
     }
     
-    // 6. Glitch (mejor al final porque altera toda la imagen)
-    if (Config.glitchActivo && Config.glitchIntensidad > 0) {
-      this.aplicarGlitch();
+    // 6. Bloom (después del desenfoque para un efecto más suave)
+    if (Config.bloomActivo && Config.bloomIntensidad > 0) {
+      this.aplicarBloom();
     }
+    
+    // Dibujar el buffer de efectos procesado en el canvas principal
+    blendMode(BLEND);
+    image(this.effectsBuffer, 0, 0);
     
     // 7. Ruido gráfico (último porque se aplica encima de todo)
     if (Config.ruidoGrafico > 0) {
