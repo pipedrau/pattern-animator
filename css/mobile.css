@@ -6,7 +6,7 @@
   background-color: rgba(30, 39, 46, 0.9);
   color: white;
   padding: 10px 15px;
-  border-radius: 5px;
+  border-radius: 0;
   z-index: 1000;
   box-shadow: 0 2px 10px rgba(0,0,0,0.2);
   max-width: 200px;
@@ -73,7 +73,7 @@
     left: 50%;
     top: 50%;
     transform: translate(-50%, -50%);
-    border-radius: 12px;
+    border-radius: 0;
     box-shadow: 0 0 20px rgba(0,
     0, 0, 0.5);
     display: none;
@@ -103,12 +103,14 @@
     width: 52px;
     height: 52px;
     margin-bottom: 18px;
+    border-radius: 50%;
   }
 
   /* Ajustar el popup de bienvenida */
   .popup-content {
     max-width: 60%;
     max-height: 60%;
+    border-radius: 0;
   }
   
   .popup-content img {
@@ -119,6 +121,17 @@
   .popup-close {
     width: 36px;
     height: 36px;
+  }
+
+  #action-buttons {
+    border-radius: 0 0 0 0;
+    margin-top: 20px;
+  }
+  
+  /* Ocultar botones específicos en móvil */
+  #action-buttons .action-button[onclick*="toggleFullscreen"],
+  #action-buttons .action-button[onclick*="toggleAddParticleOnClick"] {
+    display: none;
   }
 }
 
@@ -132,6 +145,7 @@
     padding: 15px;
     overflow-y: scroll;
     -webkit-overflow-scrolling: touch;
+    border-radius: 0;
   }
   
   /* Mover botones de acción a la parte inferior (estilo dock) */
@@ -145,7 +159,8 @@
     width: 100%;
     padding: 10px 0;
     background-color: rgba(30, 39, 46, 0.7);
-    border-radius: 15px 15px 0 0;
+    border-radius: 0 0 0 0;
+    margin-top: 20px;
   }
   
   .action-button {
@@ -153,6 +168,7 @@
     height: 56px;
     margin: 0 10px;
     margin-bottom: 0;
+    border-radius: 50%;
   }
   
   /* Zona de toque aumentada para botones de acción */
@@ -170,6 +186,7 @@
   .popup-content {
     max-width: 85%;
     max-height: 60%;
+    border-radius: 0;
   }
   
   .popup-content img {
@@ -179,6 +196,7 @@
   /* Popup de ayuda - oculto en móviles */
   #help-popup {
     display: none;
+    border-radius: 0;
   }
   
   #help-toggle {
