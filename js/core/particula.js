@@ -27,6 +27,9 @@ class Particula {
     // Soporte para forma personalizada
     this.formaPersonalizada = Config.formaPersonalizada;
     this.formaPersonalizadaIndex = Config.formaPersonalizadaActual;
+    this.tipoFormaPersonalizada = Config.formaPersonalizada && Config.formasPersonalizadas[Config.formaPersonalizadaActual] 
+      ? Config.formasPersonalizadas[Config.formaPersonalizadaActual].tipo 
+      : null;
     
     // Forma irregular básica (para compatibilidad)
     this.formaIrregular = [];
@@ -424,18 +427,45 @@ class Particula {
       this._dibujarRastro(pg);
     }
     
-    // Dibujar la partícula actual
-    pg.push();
-    pg.translate(this.pos.x, this.pos.y);
-    pg.rotate(this.rotacion);
+    // Comprobar si es una forma personalizada para manejarla especialmente
+    const forma = this.formaPersonalizada && Config.formasPersonalizadas[this.formaPersonalizadaIndex];
     
-    // Aplicar configuración de estilo
-    this._aplicarEstilos(pg);
-    
-    // Dibujar según la forma seleccionada
-    this._dibujarForma(pg);
-    
-    pg.pop();
+    // Si es un GIF en el canvas principal, manejar de forma especial
+    if (forma && forma.tipo === 'imagen' && forma.esGif && forma.imgElement && (!pg || pg === window)) {
+      // Para GIFs en el canvas principal, dibujamos directamente
+      push();
+      translate(this.pos.x, this.pos.y);
+      rotate(this.rotacion);
+      
+      // Aplicar estilos (excepto relleno que no aplica a imágenes)
+      if (Config.strokeActivo) {
+        let strokeCol = color(Config.strokeColor);
+        strokeCol.setAlpha(Config.strokeOpacity);
+        stroke(strokeCol);
+        strokeWeight(Config.strokeWeightValue);
+      } else {
+        noStroke();
+      }
+      
+      // Dibujar el GIF usando image() nativo de p5.js
+      imageMode(CENTER);
+      image(forma.imgElement, 0, 0, this.size, this.size);
+      
+      pop();
+    } else {
+      // Para el resto de formas, proceso normal
+      pg.push();
+      pg.translate(this.pos.x, this.pos.y);
+      pg.rotate(this.rotacion);
+      
+      // Aplicar configuración de estilo
+      this._aplicarEstilos(pg);
+      
+      // Dibujar según la forma seleccionada
+      this._dibujarForma(pg);
+      
+      pg.pop();
+    }
   }
   
   _aplicarEstilos(pg) {
@@ -567,7 +597,7 @@ class Particula {
         }
         
         // Dibujar una forma irregular con curvas suaves
-        pg.beginShape();
+      pg.beginShape();
         
         // Agregar puntos de control antes y después para suavizar los extremos
         const primerPunto = this.puntosCurvosIrregulares[0];
@@ -590,7 +620,7 @@ class Particula {
           primerPunto.y * 0.5
         );
         
-        pg.endShape(CLOSE);
+      pg.endShape(CLOSE);
         break;
         
       case 'Línea Larga':
@@ -699,8 +729,8 @@ class Particula {
         // Guardar el estilo de relleno original
         let savedFillCurve = pg.drawingContext.fillStyle;
         // Deshabilitar el relleno y configurar el trazo
-        pg.noFill();
-        pg.stroke(this.color);
+      pg.noFill();
+      pg.stroke(this.color);
         pg.strokeWeight((this.size / 8) * escala); // Grosor proporcional al tamaño y escala
         
         // Dibujar una curva Bézier suave
@@ -789,9 +819,9 @@ class Particula {
     }
   }
 
-  // Dibujar forma personalizada desde SVG
+  // Dibujar forma personalizada (SVG o imagen)
   _dibujarFormaPersonalizada(pg, escala = 1) {
-    // Verificar que existe el índice y el SVG
+    // Verificar que existe el índice y la forma
     if (typeof this.formaPersonalizadaIndex !== 'number' || 
         !Config.formasPersonalizadas[this.formaPersonalizadaIndex]) {
       // Si no existe, volver a forma estándar
@@ -801,78 +831,90 @@ class Particula {
     }
     
     const forma = Config.formasPersonalizadas[this.formaPersonalizadaIndex];
+    const tam = this.size * escala;
     
-    // Si tenemos el SVG como elemento cargado, usarlo directamente
-    if (forma.elemento) {
-      pg.push();
-      pg.scale(this.size / 50 * escala); // Escalar proporcionalmente
-      pg.image(forma.elemento, -25, -25, 50, 50);
-      pg.pop();
-      return;
-    }
+    // Determinar si estamos en el canvas principal
+    const esCanvasPrincipal = !pg || pg === window;
     
-    // Si no tenemos elemento cargado, intentar crear uno
-    try {
-      if (!forma.intentosCarga) forma.intentosCarga = 0;
-      
-      // Limitar los intentos de carga para no sobrecargar
-      if (forma.intentosCarga >= 3) {
-        // Dibujar círculo como fallback permanente
-        pg.ellipse(0, 0, this.size * escala, this.size * escala);
-        return;
-      }
-      
-      forma.intentosCarga++;
-      
-      // Crear un div temporal con el SVG
-      const tempDiv = document.createElement('div');
-      tempDiv.innerHTML = forma.svg;
-      
-      // Buscar el tag SVG (si está envuelto en otros elementos)
-      let svgElement = tempDiv.querySelector('svg');
-      
-      if (!svgElement) {
-        console.error('No se encontró elemento SVG válido');
-        pg.ellipse(0, 0, this.size * escala, this.size * escala);
-        return;
-      }
-      
-      // Establecer viewBox si no lo tiene
-      if (!svgElement.getAttribute('viewBox')) {
-        svgElement.setAttribute('viewBox', '0 0 100 100');
-      }
-      
-      // Normalizar tamaños
-      svgElement.setAttribute('width', '50px');
-      svgElement.setAttribute('height', '50px');
-      
-      // Convertir a string seguro para base64
-      const svgString = new XMLSerializer().serializeToString(svgElement);
-      const svgBase64 = 'data:image/svg+xml;base64,' + btoa(
-        unescape(encodeURIComponent(svgString))
-      );
-      
-      // Usar p5.js para cargar la imagen SVG
-      loadImage(
-        svgBase64, 
-        img => {
-          // Guardar el elemento para uso futuro
-          forma.elemento = img;
-          console.log(`SVG cargado exitosamente para forma "${forma.nombre}"`);
-        },
-        error => {
-          console.error('Error cargando SVG:', error);
-          forma.intentosCarga = 3; // No intentar más
+    // Manejar según el tipo de forma personalizada
+    if (forma.tipo === 'imagen') {
+      if (forma.esGif && forma.imgElement) {
+        // Para GIFs animados usando elementos p5.js (createImg)
+        if (esCanvasPrincipal) {
+          // En el canvas principal
+          push();
+          translate(this.pos.x, this.pos.y);
+          rotate(this.rotacion);
+          imageMode(CENTER);
+          
+          // Dibujar el GIF usando el elemento
+          image(forma.imgElement, 0, 0, tam, tam);
+          
+          pop();
+        } else {
+          // En un buffer gráfico
+          pg.push();
+          pg.imageMode(CENTER);
+          pg.image(forma.imgElement, 0, 0, tam, tam);
+          pg.pop();
         }
-      );
-      
-      // Para esta vez, solo dibujar un círculo como fallback hasta que cargue
-      pg.ellipse(0, 0, this.size * escala, this.size * escala);
-      
-    } catch (error) {
-      console.error('Error dibujando forma personalizada:', error);
-      // Si falla, dibujar círculo como fallback
-      pg.ellipse(0, 0, this.size * escala, this.size * escala);
+      } else if (!forma.esGif && forma.imagen) {
+        // Para imágenes normales
+        pg.push();
+        pg.imageMode(CENTER);
+        pg.image(forma.imagen, 0, 0, tam, tam);
+        pg.pop();
+      } else {
+        // Fallback para imágenes no disponibles
+        pg.ellipse(0, 0, tam, tam);
+      }
+    } else if (forma.tipo === 'svg') {
+      // Para SVGs
+      if (forma.elemento) {
+        pg.push();
+        pg.imageMode(CENTER);
+        pg.image(forma.elemento, 0, 0, tam, tam);
+        pg.pop();
+      } else if (forma.svg) {
+        // Si no tenemos el elemento pero sí el SVG, intentar cargarlo
+        try {
+          // Crear un div temporal con el SVG
+          const tempDiv = document.createElement('div');
+          tempDiv.innerHTML = forma.svg;
+          const svgElement = tempDiv.querySelector('svg');
+          
+          if (svgElement) {
+            // Normalizar el SVG
+            if (!svgElement.getAttribute('viewBox')) {
+              svgElement.setAttribute('viewBox', '0 0 100 100');
+            }
+            
+            // Convertir a base64 para cargarlo
+            const svgString = new XMLSerializer().serializeToString(svgElement);
+            const svgBase64 = 'data:image/svg+xml;base64,' + btoa(
+              unescape(encodeURIComponent(svgString))
+            );
+            
+            // Cargar como imagen
+            loadImage(svgBase64, img => {
+              forma.elemento = img;
+            });
+            
+            // Mientras tanto, dibujar un círculo
+            pg.ellipse(0, 0, tam, tam);
+          } else {
+            pg.ellipse(0, 0, tam, tam);
+          }
+        } catch (error) {
+          pg.ellipse(0, 0, tam, tam);
+        }
+      } else {
+        // Fallback
+        pg.ellipse(0, 0, tam, tam);
+      }
+    } else {
+      // Tipo no reconocido, usar forma estándar
+      this._dibujarForma(pg);
     }
   }
 } 

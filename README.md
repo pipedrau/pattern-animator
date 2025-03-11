@@ -8,7 +8,8 @@ Un entorno interactivo para crear animaciones basadas en patrones, partículas y
 - **Efectos Visuales**: Aplica efectos como kaleidoscopio, pixelado, desenfoque y ruido gráfico.
 - **Patrones de Movimiento**: Elige entre diferentes patrones de movimiento como flujo de campo, espiral, circular, etc.
 - **Personalización Completa**: Controla colores, formas, tamaños, velocidades y más.
-- **Importación de SVG**: Carga archivos SVG y conviértelos en animaciones de partículas.
+- **Importación de Imágenes**: Carga archivos SVG, GIF, PNG, JPG o WEBP y conviértelos en formas para las partículas.
+- **Soporte para GIFs Animados**: Utiliza GIFs animados como formas de partículas manteniendo su animación.
 - **Exportación de Animaciones**: Graba y exporta tus creaciones en diferentes formatos.
 - **Interfaz Intuitiva**: Panel de control completo con todas las opciones disponibles.
 
@@ -47,14 +48,24 @@ Pattern Animator/
 
 ## Nuevas Funcionalidades
 
-### Importación de SVG
+### Importación de Imágenes
 
-Puedes cargar archivos SVG y convertirlos en animaciones de partículas:
+Puedes cargar distintos tipos de archivos de imagen y utilizarlos como formas para las partículas:
 
-1. Haz clic en "Examinar" en la sección "Importar SVG".
-2. Selecciona un archivo SVG de tu computadora.
-3. Las partículas se reorganizarán para formar la imagen SVG.
-4. Puedes aplicar diferentes efectos y movimientos a las partículas.
+1. Ve a la sección "Formas Personalizadas" en el panel de control.
+2. Haz clic en "Importar imagen".
+3. Selecciona un archivo de imagen (SVG, GIF, PNG, JPG o WEBP).
+4. Las imágenes se mostrarán en la galería de formas personalizadas.
+5. Haz clic en "Usar" para aplicar la forma a las partículas.
+
+#### Soporte para GIFs Animados
+
+Los GIFs animados se reproducirán correctamente cuando se utilizan como forma de partícula:
+
+1. Importa un archivo GIF usando el mismo procedimiento anterior.
+2. Los GIFs se identifican con un indicador especial en la galería.
+3. Al usar un GIF como forma, cada partícula mostrará la animación completa.
+4. La animación del GIF se reproduce a su velocidad original independientemente del frame rate de la animación principal.
 
 ### Exportación de Animaciones
 
@@ -65,6 +76,24 @@ Graba y exporta tus animaciones:
 3. Espera a que termine la grabación.
 4. Selecciona el formato de exportación y la calidad.
 5. Haz clic en "Exportar" para descargar tu animación.
+
+## Mejoras en Efectos Visuales
+
+Se han implementado importantes mejoras en los efectos visuales:
+
+1. **Control de Orden de Efectos**: Ahora puedes elegir si aplicar ciertos efectos antes o después del desenfoque:
+   - Pixelado: Crea efectos de pixelado más extremos (hasta 200px) y controla si se aplica sobre el desenfoque.
+   - Semitono: Conserva los colores originales y permite seleccionar entre diferentes modos de fusión.
+   - Glitch: Puedes aplicarlo antes o después del desenfoque para diferentes resultados estéticos.
+
+2. **Optimización de Efectos**:
+   - Desenfoque: Implementación más eficiente usando buffers de baja resolución, con soporte para desenfoque extremo.
+   - Bloom: Mejor rendimiento y calidad de resplandor.
+   - Aberración cromática: Mejorada con efecto radial.
+
+3. **Interfaz Mejorada**:
+   - Organización en subsecciones plegables para mejor navegación.
+   - Indicadores visuales para valores extremos.
 
 ## Requisitos
 

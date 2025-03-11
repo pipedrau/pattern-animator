@@ -965,9 +965,81 @@ input[type="checkbox"] {
   height: 40px;
 }
 
+.imagen-personalizada-container {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.imagen-personalizada-preview {
+  max-width: 90%;
+  max-height: 90%;
+  object-fit: contain;
+}
+
+.gif-preview {
+  border: 2px solid rgba(255, 64, 129, 0.5);
+  border-radius: 4px;
+}
+
+.gif-no-recuperado, .imagen-no-recuperada {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(0, 0, 0, 0.3);
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 11px;
+  text-align: center;
+  padding: 5px;
+}
+
+.gif-no-recuperado p, .imagen-no-recuperada p {
+  margin: 2px 0;
+}
+
+.gif-no-recuperado {
+  border: 2px solid rgba(255, 64, 129, 0.5);
+  border-radius: 4px;
+}
+
+.no-imagen {
+  color: rgba(255, 255, 255, 0.5);
+  font-style: italic;
+  font-size: 11px;
+  text-align: center;
+}
+
+.forma-personalizada-tipo {
+  display: inline-block;
+  font-size: 10px;
+  background-color: rgba(0, 0, 0, 0.2);
+  padding: 2px 5px;
+  border-radius: 3px;
+  margin-left: 5px;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.gif-indicator {
+  display: inline-block;
+  font-size: 10px;
+  background-color: rgba(255, 64, 129, 0.7);
+  color: white;
+  padding: 2px 5px;
+  border-radius: 3px;
+  margin-left: 5px;
+  font-weight: bold;
+  animation: pulse 1.5s infinite;
+}
+
 .forma-personalizada-nombre {
-  margin: 8px 0;
+  margin: 8px 0 3px 0;
   font-size: 12px;
+  display: inline-block;
   text-align: center;
   white-space: nowrap;
   overflow: hidden;

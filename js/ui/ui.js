@@ -577,12 +577,116 @@ const UI = {
   _crearSeccionEfectos() {
     let seccion = this._crearSeccionPlegable('Efectos');
     
+    // Crear contenedor de acordeón para las subsecciones
+    let acordeonEfectos = createDiv();
+    acordeonEfectos.class('acordeon-efectos');
+    acordeonEfectos.parent(seccion);
+    
+    // Estilo CSS en línea para el acordeón
+    let estiloAcordeon = createDiv();
+    estiloAcordeon.html(`
+      <style>
+        .acordeon-efectos .subseccion {
+          margin-bottom: 12px;
+          border: 1px solid rgba(255,255,255,0.15);
+          border-radius: 8px;
+          overflow: hidden;
+          box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .acordeon-efectos .subseccion-titulo {
+          background: rgba(0,0,0,0.25);
+          padding: 10px 12px;
+          cursor: pointer;
+          font-weight: bold;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          min-height: 20px;
+          user-select: none;
+          -webkit-tap-highlight-color: transparent;
+        }
+        .acordeon-efectos .subseccion-titulo:hover {
+          background: rgba(0,0,0,0.35);
+        }
+        .acordeon-efectos .subseccion-titulo:active {
+          background: rgba(0,0,0,0.4);
+        }
+        .acordeon-efectos .subseccion-contenido {
+          padding: 12px 10px;
+          display: none;
+          background: rgba(0,0,0,0.1);
+        }
+        .acordeon-efectos .subseccion.activa .subseccion-contenido {
+          display: block;
+        }
+        .acordeon-efectos .flecha {
+          transition: transform 0.3s;
+          font-size: 16px;
+          color: rgba(255,255,255,0.8);
+        }
+        .acordeon-efectos .subseccion.activa .flecha {
+          transform: rotate(90deg);
+        }
+        /* Soporte para dispositivos táctiles */
+        @media (max-width: 768px) {
+          .acordeon-efectos .subseccion-titulo {
+            padding: 14px 16px;
+            font-size: 16px;
+          }
+          .acordeon-efectos .flecha {
+            font-size: 20px;
+          }
+        }
+      </style>
+    `);
+    estiloAcordeon.parent(seccion);
+    
+    // Función auxiliar para crear subsecciones
+    const crearSubseccion = (titulo, inicialmenteAbierta = false) => {
+      let subseccion = createDiv();
+      subseccion.class('subseccion');
+      if (inicialmenteAbierta) {
+        subseccion.addClass('activa');
+      }
+      subseccion.parent(acordeonEfectos);
+      
+      let tituloDiv = createDiv();
+      tituloDiv.class('subseccion-titulo');
+      tituloDiv.html(`<span>${titulo}</span><span class="flecha">▶</span>`);
+      tituloDiv.parent(subseccion);
+      
+      let contenido = createDiv();
+      contenido.class('subseccion-contenido');
+      contenido.parent(subseccion);
+      
+      // Mejorar el manejo de eventos para que funcione en todos los dispositivos
+      const toggleSubseccion = function() {
+        // Si ya está activa la subsección, quitamos la clase
+        if (subseccion.hasClass('activa')) {
+          subseccion.removeClass('activa');
+        } else {
+          // Si no está activa, añadimos la clase
+          subseccion.addClass('activa');
+        }
+        return false; // Prevenir propagación
+      };
+      
+      // Usar touchend para mejor soporte en dispositivos táctiles
+      tituloDiv.touchEnded(toggleSubseccion);
+      tituloDiv.mouseClicked(toggleSubseccion);
+      
+      return contenido;
+    };
+    
+    // 1. Subsección: Efectos Básicos (Ruido y Desenfoque)
+    let efectosBasicos = crearSubseccion('Efectos Básicos', true);
+    
     // Ruido gráfico
     let ruidoLabel = createElement('p', 'Ruido gráfico: ' + Config.ruidoGrafico);
-    ruidoLabel.parent(seccion);
+    ruidoLabel.parent(efectosBasicos);
     
     let ruidoSlider = createSlider(0, 100, Config.ruidoGrafico);
-    ruidoSlider.parent(seccion);
+    ruidoSlider.parent(efectosBasicos);
     ruidoSlider.input(() => {
       Config.ruidoGrafico = ruidoSlider.value();
       ruidoLabel.html('Ruido gráfico: ' + Config.ruidoGrafico);
@@ -590,46 +694,58 @@ const UI = {
     
     // Desenfoque
     let desenfoqueLabel = createElement('p', 'Desenfoque: ' + Config.desenfoque);
-    desenfoqueLabel.parent(seccion);
+    desenfoqueLabel.parent(efectosBasicos);
     
-    // Rango de 0 a 100 con incrementos de 0.1 para control preciso
     let desenfoqueSlider = createSlider(0, 100, Config.desenfoque, 0.1);
-    desenfoqueSlider.parent(seccion);
+    desenfoqueSlider.parent(efectosBasicos);
     desenfoqueSlider.input(() => {
       Config.desenfoque = desenfoqueSlider.value();
-      desenfoqueLabel.html('Desenfoque: ' + Config.desenfoque.toFixed(1));
+      let texto = 'Desenfoque: ' + Config.desenfoque.toFixed(1);
+      if (Config.desenfoque > 75) {
+        texto += ' (Profundo)';
+      }
+      desenfoqueLabel.html(texto);
     });
     
-    // Efecto Pixelado
-    let pixeladoContainer = createDiv();
-    pixeladoContainer.class('effect-container');
-    pixeladoContainer.parent(seccion);
+    // 2. Subsección: Efecto Pixelado
+    let efectoPixelado = crearSubseccion('Efecto Pixelado');
     
     let pixeladoCheck = createCheckbox('Pixelado', Config.pixeladoActivo);
-    pixeladoCheck.parent(pixeladoContainer);
+    pixeladoCheck.parent(efectoPixelado);
     pixeladoCheck.changed(() => {
       Config.pixeladoActivo = pixeladoCheck.checked();
     });
     
     let pixeladoTamanoLabel = createElement('p', 'Tamaño píxel: ' + Config.pixeladoTamano);
-    pixeladoTamanoLabel.parent(pixeladoContainer);
+    pixeladoTamanoLabel.parent(efectoPixelado);
     pixeladoTamanoLabel.style('margin-left', '20px');
     
-    let pixeladoTamanoSlider = createSlider(1, 30, Config.pixeladoTamano, 1);
-    pixeladoTamanoSlider.parent(pixeladoContainer);
+    let pixeladoTamanoSlider = createSlider(1, 200, Config.pixeladoTamano, 1);
+    pixeladoTamanoSlider.parent(efectoPixelado);
     pixeladoTamanoSlider.style('margin-left', '20px');
     pixeladoTamanoSlider.input(() => {
       Config.pixeladoTamano = pixeladoTamanoSlider.value();
-      pixeladoTamanoLabel.html('Tamaño píxel: ' + Config.pixeladoTamano);
+      let textoPixelado = 'Tamaño píxel: ' + Config.pixeladoTamano;
+      if (Config.pixeladoTamano > 100) {
+        textoPixelado += ' (Extremo)';
+      }
+      pixeladoTamanoLabel.html(textoPixelado);
     });
     
-    // Efecto Bloom
-    let bloomContainer = createDiv();
-    bloomContainer.class('effect-container');
-    bloomContainer.parent(seccion);
+    // Añadir checkbox para aplicar pixelado sobre desenfoque
+    let pixeladoSobreDesenfoqueCheck = createCheckbox('Aplicar sobre desenfoque', Config.pixeladoSobreDesenfoque);
+    pixeladoSobreDesenfoqueCheck.parent(efectoPixelado);
+    pixeladoSobreDesenfoqueCheck.style('margin-left', '20px');
+    pixeladoSobreDesenfoqueCheck.style('margin-top', '5px');
+    pixeladoSobreDesenfoqueCheck.changed(() => {
+      Config.pixeladoSobreDesenfoque = pixeladoSobreDesenfoqueCheck.checked();
+    });
+    
+    // 3. Subsección: Efecto Bloom
+    let efectoBloom = crearSubseccion('Efecto Bloom');
     
     let bloomCheck = createCheckbox('Bloom (Resplandor)', Config.bloomActivo);
-    bloomCheck.parent(bloomContainer);
+    bloomCheck.parent(efectoBloom);
     bloomCheck.changed(() => {
       Config.bloomActivo = bloomCheck.checked();
       // Inicializar capas de bloom si se activa
@@ -639,11 +755,11 @@ const UI = {
     });
     
     let bloomIntensidadLabel = createElement('p', 'Intensidad: ' + Config.bloomIntensidad);
-    bloomIntensidadLabel.parent(bloomContainer);
+    bloomIntensidadLabel.parent(efectoBloom);
     bloomIntensidadLabel.style('margin-left', '20px');
     
     let bloomIntensidadSlider = createSlider(1, 100, Config.bloomIntensidad, 1);
-    bloomIntensidadSlider.parent(bloomContainer);
+    bloomIntensidadSlider.parent(efectoBloom);
     bloomIntensidadSlider.style('margin-left', '20px');
     bloomIntensidadSlider.input(() => {
       Config.bloomIntensidad = bloomIntensidadSlider.value();
@@ -651,11 +767,11 @@ const UI = {
     });
     
     let bloomUmbralLabel = createElement('p', 'Umbral: ' + Config.bloomUmbral);
-    bloomUmbralLabel.parent(bloomContainer);
+    bloomUmbralLabel.parent(efectoBloom);
     bloomUmbralLabel.style('margin-left', '20px');
     
     let bloomUmbralSlider = createSlider(1, 100, Config.bloomUmbral, 1);
-    bloomUmbralSlider.parent(bloomContainer);
+    bloomUmbralSlider.parent(efectoBloom);
     bloomUmbralSlider.style('margin-left', '20px');
     bloomUmbralSlider.input(() => {
       Config.bloomUmbral = bloomUmbralSlider.value();
@@ -663,56 +779,95 @@ const UI = {
     });
     
     let bloomColorLabel = createElement('p', 'Color del bloom:');
-    bloomColorLabel.parent(bloomContainer);
+    bloomColorLabel.parent(efectoBloom);
     bloomColorLabel.style('margin-left', '20px');
     
     let bloomColorInput = createInput(Config.bloomColor, 'color');
-    bloomColorInput.parent(bloomContainer);
+    bloomColorInput.parent(efectoBloom);
     bloomColorInput.style('margin-left', '20px');
     bloomColorInput.input(() => {
       Config.bloomColor = bloomColorInput.value();
     });
     
-    // Efecto Semitono
-    let semitonoContainer = createDiv();
-    semitonoContainer.class('effect-container');
-    semitonoContainer.parent(seccion);
+    // 4. Subsección: Efecto Semitono
+    let efectoSemitono = crearSubseccion('Efecto Semitono');
     
     let semitonoCheck = createCheckbox('Semitono', Config.semitonoActivo);
-    semitonoCheck.parent(semitonoContainer);
+    semitonoCheck.parent(efectoSemitono);
     semitonoCheck.changed(() => {
       Config.semitonoActivo = semitonoCheck.checked();
     });
     
     let semitonoEscalaLabel = createElement('p', 'Escala: ' + Config.semitonoEscala.toFixed(2));
-    semitonoEscalaLabel.parent(semitonoContainer);
+    semitonoEscalaLabel.parent(efectoSemitono);
     semitonoEscalaLabel.style('margin-left', '20px');
     
     let semitonoEscalaSlider = createSlider(0, 1, Config.semitonoEscala, 0.01);
-    semitonoEscalaSlider.parent(semitonoContainer);
+    semitonoEscalaSlider.parent(efectoSemitono);
     semitonoEscalaSlider.style('margin-left', '20px');
     semitonoEscalaSlider.input(() => {
       Config.semitonoEscala = semitonoEscalaSlider.value();
       semitonoEscalaLabel.html('Escala: ' + Config.semitonoEscala.toFixed(2));
     });
     
-    // Efecto Aberración Cromática
-    let aberracionContainer = createDiv();
-    aberracionContainer.class('effect-container');
-    aberracionContainer.parent(seccion);
+    // Añadir checkbox para aplicar semitono sobre desenfoque
+    let semitonoSobreDesenfoqueCheck = createCheckbox('Aplicar sobre desenfoque', Config.semitonoSobreDesenfoque);
+    semitonoSobreDesenfoqueCheck.parent(efectoSemitono);
+    semitonoSobreDesenfoqueCheck.style('margin-left', '20px');
+    semitonoSobreDesenfoqueCheck.style('margin-top', '5px');
+    semitonoSobreDesenfoqueCheck.changed(() => {
+      Config.semitonoSobreDesenfoque = semitonoSobreDesenfoqueCheck.checked();
+    });
+    
+    // Añadir checkbox para preservar colores
+    let semitonoPreservarColoresCheck = createCheckbox('Preservar colores', Config.semitonoPreservarColores);
+    semitonoPreservarColoresCheck.parent(efectoSemitono);
+    semitonoPreservarColoresCheck.style('margin-left', '20px');
+    semitonoPreservarColoresCheck.style('margin-top', '5px');
+    semitonoPreservarColoresCheck.changed(() => {
+      Config.semitonoPreservarColores = semitonoPreservarColoresCheck.checked();
+    });
+    
+    // Añadir selector de modo de fusión
+    let semitonoModoLabel = createElement('p', 'Modo de fusión:');
+    semitonoModoLabel.parent(efectoSemitono);
+    semitonoModoLabel.style('margin-left', '20px');
+    semitonoModoLabel.style('margin-top', '5px');
+    
+    let semitonoModoSelect = createSelect();
+    semitonoModoSelect.parent(efectoSemitono);
+    semitonoModoSelect.style('margin-left', '20px');
+    semitonoModoSelect.style('margin-top', '5px');
+    
+    // Agregar opciones de modo de fusión
+    semitonoModoSelect.option('Normal', 'normal');
+    semitonoModoSelect.option('Superposición', 'superposicion');
+    semitonoModoSelect.option('Multiplicar', 'multiplicar');
+    semitonoModoSelect.option('Negativo', 'negativo');
+    
+    // Establecer el valor actual
+    semitonoModoSelect.selected(Config.semitonoModoFusion);
+    
+    // Manejar cambios
+    semitonoModoSelect.changed(() => {
+      Config.semitonoModoFusion = semitonoModoSelect.value();
+    });
+    
+    // 5. Subsección: Aberración Cromática
+    let efectoAberracion = crearSubseccion('Aberración Cromática');
     
     let aberracionCheck = createCheckbox('Aberración Cromática', Config.aberracionActiva);
-    aberracionCheck.parent(aberracionContainer);
+    aberracionCheck.parent(efectoAberracion);
     aberracionCheck.changed(() => {
       Config.aberracionActiva = aberracionCheck.checked();
     });
     
     let aberracionIntensidadLabel = createElement('p', 'Intensidad: ' + Config.aberracionIntensidad);
-    aberracionIntensidadLabel.parent(aberracionContainer);
+    aberracionIntensidadLabel.parent(efectoAberracion);
     aberracionIntensidadLabel.style('margin-left', '20px');
     
     let aberracionIntensidadSlider = createSlider(1, 100, Config.aberracionIntensidad, 1);
-    aberracionIntensidadSlider.parent(aberracionContainer);
+    aberracionIntensidadSlider.parent(efectoAberracion);
     aberracionIntensidadSlider.style('margin-left', '20px');
     aberracionIntensidadSlider.input(() => {
       Config.aberracionIntensidad = aberracionIntensidadSlider.value();
@@ -720,33 +875,40 @@ const UI = {
     });
     
     let aberracionAnimadaCheck = createCheckbox('Animación', Config.aberracionAnimada);
-    aberracionAnimadaCheck.parent(aberracionContainer);
+    aberracionAnimadaCheck.parent(efectoAberracion);
     aberracionAnimadaCheck.style('margin-left', '20px');
     aberracionAnimadaCheck.changed(() => {
       Config.aberracionAnimada = aberracionAnimadaCheck.checked();
     });
     
-    // Efecto Glitch
-    let glitchContainer = createDiv();
-    glitchContainer.class('effect-container');
-    glitchContainer.parent(seccion);
+    // 6. Subsección: Efecto Glitch
+    let efectoGlitch = crearSubseccion('Efecto Glitch');
     
     let glitchCheck = createCheckbox('Glitch', Config.glitchActivo);
-    glitchCheck.parent(glitchContainer);
+    glitchCheck.parent(efectoGlitch);
     glitchCheck.changed(() => {
       Config.glitchActivo = glitchCheck.checked();
     });
     
     let glitchIntensidadLabel = createElement('p', 'Intensidad: ' + Config.glitchIntensidad);
-    glitchIntensidadLabel.parent(glitchContainer);
+    glitchIntensidadLabel.parent(efectoGlitch);
     glitchIntensidadLabel.style('margin-left', '20px');
     
     let glitchIntensidadSlider = createSlider(1, 100, Config.glitchIntensidad, 1);
-    glitchIntensidadSlider.parent(glitchContainer);
+    glitchIntensidadSlider.parent(efectoGlitch);
     glitchIntensidadSlider.style('margin-left', '20px');
     glitchIntensidadSlider.input(() => {
       Config.glitchIntensidad = glitchIntensidadSlider.value();
       glitchIntensidadLabel.html('Intensidad: ' + Config.glitchIntensidad);
+    });
+    
+    // Añadir checkbox para aplicar glitch sobre desenfoque
+    let glitchSobreDesenfoqueCheck = createCheckbox('Aplicar sobre desenfoque', Config.glitchSobreDesenfoque);
+    glitchSobreDesenfoqueCheck.parent(efectoGlitch);
+    glitchSobreDesenfoqueCheck.style('margin-left', '20px');
+    glitchSobreDesenfoqueCheck.style('margin-top', '5px');
+    glitchSobreDesenfoqueCheck.changed(() => {
+      Config.glitchSobreDesenfoque = glitchSobreDesenfoqueCheck.checked();
     });
   },
   
@@ -1625,7 +1787,7 @@ const UI = {
     let seccion = this._crearSeccionPlegable('Formas Personalizadas');
     
     // Mensaje informativo
-    let infoText = createElement('p', 'Importa tus propias formas SVG para usar como partículas:');
+    let infoText = createElement('p', 'Importa imágenes o SVG para usar como partículas (PNG, JPG, GIF, WEBP, SVG):');
     infoText.parent(seccion);
     
     // Botones de acción
@@ -1633,11 +1795,11 @@ const UI = {
     botonesContainer.class('botones-formas-container');
     botonesContainer.parent(seccion);
     
-    // Botón para importar SVG
-    let importarBtn = createButton('Importar SVG');
+    // Botón para importar imágenes
+    let importarBtn = createButton('Importar imagen');
     importarBtn.parent(botonesContainer);
     importarBtn.class('importar-svg-btn');
-    importarBtn.mousePressed(() => this._importarSVG());
+    importarBtn.mousePressed(() => this._importarImagen());
     
     // Botón para volver a formas estándar
     let volverBtn = createButton('Volver a formas estándar');
@@ -1661,14 +1823,43 @@ const UI = {
     if (localStorage.getItem('formasPersonalizadas')) {
       try {
         let formasGuardadas = JSON.parse(localStorage.getItem('formasPersonalizadas'));
-        Config.formasPersonalizadas = formasGuardadas;
         
-        if (formasGuardadas.length > 0) {
+        // Inicializar el array de formas personalizadas
+        Config.formasPersonalizadas = [];
+        
+        // Procesar cada forma guardada
+        formasGuardadas.forEach(formaGuardada => {
+          // Para GIFs y otras imágenes, solo tenemos metadatos
+          if (formaGuardada.tipo === 'imagen') {
+            // Crear un placeholder para la imagen
+            let nuevaForma = {
+              id: formaGuardada.id,
+              nombre: formaGuardada.nombre,
+              tipo: 'imagen',
+              esGif: formaGuardada.esGif || false,
+              imagenCargada: false // Marcar como no cargada (no podemos guardar los datos de la imagen)
+            };
+            
+            Config.formasPersonalizadas.push(nuevaForma);
+          } else if (formaGuardada.tipo === 'svg' && formaGuardada.svg) {
+            // Para SVGs tenemos todo el contenido
+            Config.formasPersonalizadas.push(formaGuardada);
+          }
+        });
+        
+        if (Config.formasPersonalizadas.length > 0) {
           select('#no-forms-msg').style('display', 'none');
           this._actualizarGaleriaFormas();
+          
+          // Intentar cargar las formas personalizadas SVG
+          Config.formasPersonalizadas.forEach((forma, index) => {
+            if (forma.tipo === 'svg') {
+              this._validarForma(forma, index);
+            }
+          });
         }
-      } catch (e) {
-        console.error('Error al cargar formas personalizadas:', e);
+      } catch (error) {
+        console.error('Error cargando formas personalizadas:', error);
       }
     }
   },
@@ -1763,6 +1954,7 @@ const UI = {
         let nuevaForma = {
           id: Date.now(), // ID único
           nombre: nombre,
+          tipo: 'svg',
           svg: svgContent
         };
         
@@ -1780,7 +1972,7 @@ const UI = {
         console.log(`SVG importado: ${nombre}`);
         
         // Test: probar a cargar el SVG para verificar validez
-        this._testSVGCarga(nuevaForma, Config.formasPersonalizadas.length - 1);
+        this._validarForma(nuevaForma, Config.formasPersonalizadas.length - 1);
         
       } catch (error) {
         console.error('Error procesando el SVG:', error);
@@ -1802,7 +1994,7 @@ const UI = {
   },
   
   // Método para probar la carga de un SVG (validación)
-  _testSVGCarga(forma, index) {
+  _validarForma(forma, index) {
     try {
       // Crear un div temporal con el SVG
       const tempDiv = document.createElement('div');
@@ -1849,16 +2041,73 @@ const UI = {
       item.class('forma-personalizada-item');
       item.parent(galeria);
       
-      // Miniatura SVG
-      let svgContainer = createDiv();
-      svgContainer.class('forma-personalizada-preview');
-      svgContainer.html(forma.svg);
-      svgContainer.parent(item);
+      // Miniatura de la forma (SVG o imagen)
+      let previewContainer = createDiv();
+      previewContainer.class('forma-personalizada-preview');
+      
+      // Dependiendo del tipo de forma, mostramos SVG o imagen
+      if (forma.tipo === 'svg') {
+        // Miniatura SVG
+        previewContainer.html(forma.svg);
+      } else if (forma.tipo === 'imagen') {
+        // Miniatura de imagen
+        let imgContainer = createDiv();
+        imgContainer.class('imagen-personalizada-container');
+        
+        if (forma.esGif) {
+          // Para GIFs
+          if (forma.imgElement) {
+            // Clonar el elemento del GIF para la miniatura
+            let imgClone = createImg('', forma.nombre);
+            imgClone.elt.src = forma.imgElement.elt.src;
+            imgClone.class('imagen-personalizada-preview gif-preview');
+            imgClone.parent(imgContainer);
+          } else {
+            // GIF no disponible (ej. después de recargar)
+            let mensajeDiv = createDiv();
+            mensajeDiv.class('gif-no-recuperado');
+            mensajeDiv.html('<p>GIF no recuperable</p><p>Por favor, vuelve a importarlo</p>');
+            mensajeDiv.parent(imgContainer);
+          }
+        } else {
+          // Para imágenes normales
+          if (forma.imagen) {
+            let imgPreview = createImg(forma.imagen.canvas.toDataURL(), forma.nombre);
+            imgPreview.class('imagen-personalizada-preview');
+            imgPreview.parent(imgContainer);
+          } else {
+            // Imagen no disponible
+            let mensajeDiv = createDiv();
+            mensajeDiv.class('imagen-no-recuperada');
+            mensajeDiv.html('<p>Imagen no recuperable</p><p>Por favor, vuelve a importarla</p>');
+            mensajeDiv.parent(imgContainer);
+          }
+        }
+        
+        imgContainer.parent(previewContainer);
+      } else {
+        // Si no es SVG ni imagen, mostrar un mensaje de error
+        previewContainer.html('<div class="no-imagen">Tipo de forma no válido</div>');
+      }
+      
+      previewContainer.parent(item);
       
       // Nombre de la forma
       let nombreP = createElement('p', forma.nombre);
       nombreP.class('forma-personalizada-nombre');
       nombreP.parent(item);
+      
+      // Tipo de forma (SVG o Imagen)
+      let tipoP = createElement('span', forma.tipo.toUpperCase());
+      tipoP.class('forma-personalizada-tipo');
+      tipoP.parent(item);
+      
+      // Si es un GIF, añadir un indicador especial
+      if (forma.tipo === 'imagen' && forma.esGif) {
+        let gifIndicator = createElement('span', 'GIF');
+        gifIndicator.class('gif-indicator');
+        gifIndicator.parent(item);
+      }
       
       // Botones de acción
       let btnContainer = createDiv();
@@ -1892,7 +2141,9 @@ const UI = {
   // Usar una forma personalizada
   _usarFormaPersonalizada(index) {
     if (index >= 0 && index < Config.formasPersonalizadas.length) {
-      // Guardar índice actual
+      const forma = Config.formasPersonalizadas[index];
+      
+      // Guardar índice actual y marcar que estamos usando forma personalizada
       Config.formaPersonalizadaActual = index;
       Config.formaPersonalizada = true;
       
@@ -1906,9 +2157,10 @@ const UI = {
       for (let p of ParticleSystem.particulas) {
         p.formaPersonalizada = true;
         p.formaPersonalizadaIndex = index;
+        p.tipoFormaPersonalizada = forma.tipo;
       }
       
-      console.log(`Usando forma personalizada: ${Config.formasPersonalizadas[index].nombre}`);
+      console.log(`Usando forma personalizada: ${forma.nombre} (${forma.tipo}${forma.esGif ? ' - GIF animado' : ''})`);
     }
   },
   
@@ -2127,6 +2379,192 @@ const UI = {
       const btnGrabar = document.getElementById('iniciar-grabacion');
       btnGrabar.textContent = 'Grabar';
       btnGrabar.classList.remove('grabando');
+    }
+  },
+  
+  _importarImagen() {
+    // Crear un input de archivo oculto
+    let input = createFileInput(file => {
+      // Obtener información del archivo
+      const fileName = file.name || '';
+      const fileType = file.type || '';
+      const fileExt = fileName.split('.').pop().toLowerCase();
+      
+      console.log('Archivo seleccionado:', fileName, 'Tipo:', fileType, 'Extensión:', fileExt);
+      
+      // Comprobar si es un formato válido
+      const formatosValidos = ['svg', 'png', 'jpg', 'jpeg', 'gif', 'webp'];
+      const mimeValidos = ['image/svg+xml', 'image/png', 'image/jpeg', 'image/gif', 'image/webp'];
+      
+      if (formatosValidos.includes(fileExt) || mimeValidos.some(mime => fileType.includes(mime))) {
+        console.log('Formato de imagen válido, procesando...');
+        
+        // Procesar según el tipo
+        if (fileExt === 'svg' || fileType.includes('svg')) {
+          this._procesarSVG(file);
+        } else {
+          this._procesarImagen(file);
+        }
+      } else {
+        console.error('Tipo de archivo no válido:', fileType, 'Nombre:', fileName);
+        alert('Por favor, selecciona un archivo de imagen válido (SVG, PNG, JPG, GIF, WEBP).');
+      }
+    }, false); // false para no permitir múltiples archivos
+    
+    // Configurar los tipos de archivo aceptados
+    input.attribute('accept', '.svg,.png,.jpg,.jpeg,.gif,.webp,image/svg+xml,image/png,image/jpeg,image/gif,image/webp');
+    input.style('display', 'none');
+    document.body.appendChild(input.elt);
+    input.elt.click(); // Simular clic para abrir el selector de archivos
+    
+    // Eliminar el input después de usarlo
+    setTimeout(() => {
+      if (input && input.elt && input.elt.parentNode) {
+        input.elt.parentNode.removeChild(input.elt);
+      }
+    }, 1000);
+  },
+  
+  // Procesar una imagen raster (PNG, JPG, GIF, WEBP)
+  _procesarImagen(file) {
+    const fileName = file.name || 'imagen-personalizada';
+    const fileExt = fileName.split('.').pop().toLowerCase();
+    const esGif = fileExt === 'gif' || (file.type && file.type.includes('gif'));
+    
+    console.log('Procesando imagen:', fileName, esGif ? '(GIF animado)' : '');
+    
+    // Crear una URL para la imagen
+    const blobURL = URL.createObjectURL(file.file || file);
+    
+    if (esGif) {
+      // Para GIFs, usamos createImg de p5.js que mantiene la animación
+      const imgElement = createImg(blobURL, 'gifImage');
+      imgElement.hide(); // Ocultar el elemento pero mantenerlo activo
+      
+      // Cuando la imagen se carga
+      imgElement.elt.onload = () => {
+        // Crear la forma personalizada
+        let nombre = fileName.split('.')[0].substring(0, 15);
+        
+        // Guardar el GIF en la configuración
+        let nuevaForma = {
+          id: Date.now(),
+          nombre: nombre,
+          tipo: 'imagen',
+          esGif: true,
+          imgElement: imgElement, // Elemento p5.js createImg
+          width: imgElement.elt.width || 100,
+          height: imgElement.elt.height || 100
+        };
+        
+        Config.formasPersonalizadas.push(nuevaForma);
+        this._actualizarLocalStorage();
+        
+        // Ocultar mensaje de no hay formas
+        select('#no-forms-msg').style('display', 'none');
+        
+        // Actualizar la galería
+        this._actualizarGaleriaFormas();
+        
+        console.log(`GIF importado: ${nombre}`);
+      };
+    } else {
+      // Para imágenes no GIF, usar loadImage de p5.js
+      loadImage(blobURL, img => {
+        // Crear un nombre amigable para esta forma
+        let nombre = fileName.split('.')[0].substring(0, 15);
+        
+        // Guardar la imagen en la configuración
+        let nuevaForma = {
+          id: Date.now(),
+          nombre: nombre,
+          tipo: 'imagen',
+          esGif: false,
+          imagen: img
+        };
+        
+        Config.formasPersonalizadas.push(nuevaForma);
+        this._actualizarLocalStorage();
+        
+        // Ocultar mensaje de no hay formas
+        select('#no-forms-msg').style('display', 'none');
+        
+        // Actualizar la galería
+        this._actualizarGaleriaFormas();
+        
+        console.log(`Imagen importada: ${nombre}`);
+      });
+    }
+  },
+  
+  // Actualizar localStorage con las formas personalizadas
+  _actualizarLocalStorage() {
+    // Solo guardamos metadata para recuperar estados
+    let formasParaGuardar = Config.formasPersonalizadas.map(forma => {
+      if (forma.tipo === 'imagen') {
+        return {
+          id: forma.id,
+          nombre: forma.nombre,
+          tipo: 'imagen',
+          esGif: forma.esGif
+        };
+      } else {
+        return forma; // SVGs se guardan completos
+      }
+    });
+    
+    localStorage.setItem('formasPersonalizadas', JSON.stringify(formasParaGuardar));
+  },
+  
+  // Método para validar una forma personalizada (SVG o imagen)
+  _validarForma(forma, index) {
+    try {
+      // Si es una imagen, no necesita validación especial
+      if (forma.tipo === 'imagen') {
+        // Solo verificamos que la imagen existe
+        if (!forma.imagen || !forma.imagen.width) {
+          console.error('Imagen no válida o no cargada');
+          
+          // Eliminar la forma inválida
+          this._eliminarFormaPersonalizada(index);
+          return;
+        }
+        
+        console.log('Imagen validada con éxito');
+        return;
+      }
+      
+      // Si es un SVG, validamos su estructura
+      if (forma.tipo === 'svg') {
+        // Crear un div temporal con el SVG
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = forma.svg;
+        
+        // Buscar el tag SVG (si está envuelto en otros elementos)
+        let svgElement = tempDiv.querySelector('svg');
+        
+        if (!svgElement) {
+          console.error('No se encontró elemento SVG válido en el contenido');
+          alert('El archivo importado no contiene un elemento SVG válido.');
+          
+          // Eliminar la forma inválida
+          this._eliminarFormaPersonalizada(index);
+          return;
+        }
+        
+        // Establecer viewBox si no lo tiene
+        if (!svgElement.getAttribute('viewBox')) {
+          svgElement.setAttribute('viewBox', '0 0 100 100');
+        }
+        
+        // Normalizar tamaños
+        svgElement.setAttribute('width', '50px');
+        svgElement.setAttribute('height', '50px');
+        
+        console.log('SVG validado con éxito');
+      }
+    } catch (error) {
+      console.error('Error validando forma:', error);
     }
   },
 }; 

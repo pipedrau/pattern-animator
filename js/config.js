@@ -107,6 +107,7 @@ const Config = {
   // Efecto pixelado
   pixeladoActivo: false,
   pixeladoTamano: 4, // 1-100 donde 1 es casi normal y 100 es muy pixelado
+  pixeladoSobreDesenfoque: false, // Determina si se aplica por encima del desenfoque
   
   // Efecto bloom (resplandor)
   bloomActivo: false,
@@ -117,6 +118,9 @@ const Config = {
   // Efecto semitono
   semitonoActivo: false,
   semitonoEscala: 0.2, // 0-1, donde 0 es mínimo y 1 es máximo (anteriormente era 1-100)
+  semitonoSobreDesenfoque: false, // Determina si se aplica por encima del desenfoque
+  semitonoModoFusion: 'normal', // Modos: normal, superposicion, multiplicar, negativo
+  semitonoPreservarColores: true, // Si es true, usa los colores originales; si es false, usa blanco y negro
   
   // Efecto aberración cromática
   aberracionActiva: false,
@@ -126,6 +130,7 @@ const Config = {
   // Efecto glitch
   glitchActivo: false,
   glitchIntensidad: 50, // 0-100
+  glitchSobreDesenfoque: false, // Determina si se aplica por encima del desenfoque
   
   // Interfaz
   mostrarInfo: false,

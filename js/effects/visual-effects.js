@@ -121,7 +121,7 @@ const VisualEffects = {
     
     // Calcular la escala basada en la intensidad del desenfoque
     // Más desenfoque = menor resolución = mejor rendimiento
-    const blurScale = map(Config.desenfoque, 1, 100, 0.5, 0.1);
+    const blurScale = map(Config.desenfoque, 1, 100, 0.5, 0.05); // Reducido a 0.05 para desenfoques más extremos
     const blurWidth = Math.max(8, Math.floor(width * blurScale));
     const blurHeight = Math.max(8, Math.floor(height * blurScale));
     
@@ -149,7 +149,12 @@ const VisualEffects = {
       // Aplicar desenfoque adicional dependiendo de la intensidad
       // Para valores bajos, el reescalado ya proporciona suficiente desenfoque
       if (Config.desenfoque > 20) {
-        this._blurBuffer.filter(BLUR, map(Config.desenfoque, 20, 100, 1, 3));
+        this._blurBuffer.filter(BLUR, map(Config.desenfoque, 20, 100, 1, 6)); // Aumentado a 6 para desenfoques más intensos
+        
+        // Para valores extremos, aplicar una segunda pasada de desenfoque
+        if (Config.desenfoque > 80) {
+          this._blurBuffer.filter(BLUR, map(Config.desenfoque, 80, 100, 2, 4)); // Segunda pasada para efecto ultra profundo
+        }
       }
     }
     
@@ -164,12 +169,16 @@ const VisualEffects = {
     // Evitar procesamiento si el tamaño es muy pequeño
     if (Config.pixeladoTamano <= 1) return;
     
-    // Crear un buffer temporal con menor resolución
+    // Calcular el tamaño del píxel (asegurándonos de que sea un entero)
     const pixelSize = Math.max(1, Math.floor(Config.pixeladoTamano));
-    const tempWidth = Math.ceil(width / pixelSize);
-    const tempHeight = Math.ceil(height / pixelSize);
+    
+    // Para píxeles muy grandes, el cálculo normal podría dar un buffer demasiado pequeño
+    // Establecemos un tamaño mínimo de 4 píxeles para evitar problemas de renderizado
+    const tempWidth = Math.max(4, Math.ceil(width / pixelSize));
+    const tempHeight = Math.max(4, Math.ceil(height / pixelSize));
     
     // Usar un buffer temporal para reducir la resolución
+    // Solo crear un nuevo buffer si cambia el tamaño o es la primera vez
     if (!this._pixelBuffer || this._pixelBuffer.width !== tempWidth || this._pixelBuffer.height !== tempHeight) {
       if (this._pixelBuffer) this._pixelBuffer.remove();
       this._pixelBuffer = createGraphics(tempWidth, tempHeight);
@@ -181,7 +190,7 @@ const VisualEffects = {
     
     // Dibujar la imagen de baja resolución de vuelta al buffer de efectos, ampliándola
     this.effectsBuffer.clear();
-    this.effectsBuffer.noSmooth(); // Desactivar el suavizado para un efecto pixelado más notorio
+    this.effectsBuffer.noSmooth(); // Desactivar el suavizado para un efecto pixelado más nítido
     this.effectsBuffer.image(this._pixelBuffer, 0, 0, width, height);
     this.effectsBuffer.smooth(); // Restaurar el suavizado para otros efectos
   },
@@ -226,23 +235,27 @@ const VisualEffects = {
     // Usar un tamaño de punto adaptado a la escala
     const pointSize = map(Config.semitonoEscala, 0, 1, 4, 12);
     
-    // Crear un buffer de baja resolución para mejor rendimiento
+    // Crear un buffer para el efecto de semitono
     if (!this._semitonoBuffer) {
       this._semitonoBuffer = createGraphics(width, height);
     }
     
-    // Limpiar el buffer
+    // Guardar el buffer original para aplicar el efecto con modos de fusión
+    let originalBuffer = createGraphics(width, height);
+    originalBuffer.image(this.effectsBuffer, 0, 0);
+    
+    // Limpiar el buffer de semitono
     this._semitonoBuffer.clear();
     this._semitonoBuffer.background(255);
     
     // Reducir la cantidad de puntos mediante un paso más grande
-    const step = Math.floor(pointSize);
+    // Usamos un valor mínimo de 2 para evitar demasiados puntos
+    const step = Math.max(2, Math.floor(pointSize));
     const cols = Math.ceil(width / step);
     const rows = Math.ceil(height / step);
     
-    // Configurar el estilo de dibujo
+    // Configurar el estilo de dibujo base
     this._semitonoBuffer.noStroke();
-    this._semitonoBuffer.fill(0);
     
     // Optimización: copiar datos una sola vez
     const tempBuffer = createGraphics(width, height);
@@ -271,9 +284,19 @@ const VisualEffects = {
         const brightness = (r + g + b) / 3;
         
         // Tamaño del punto basado en brillo (invertido)
-        const dotSize = map(brightness, 0, 255, pointSize * 0.9, pointSize * 0.1);
+        // Ajustamos el mínimo para que nunca sea cero
+        const dotSize = map(brightness, 0, 255, pointSize * 0.9, Math.max(1, pointSize * 0.1));
         
-        // Dibujar solo si tiene tamaño visible (optimización)
+        // Establecer el color del punto
+        if (Config.semitonoPreservarColores) {
+          // Usar el color original
+          this._semitonoBuffer.fill(r, g, b);
+        } else {
+          // Modo blanco y negro tradicional
+          this._semitonoBuffer.fill(0);
+        }
+        
+        // Dibujar solo si tiene tamaño visible
         if (dotSize > 0.5) {
           this._semitonoBuffer.ellipse(posX, posY, dotSize, dotSize);
         }
@@ -283,9 +306,36 @@ const VisualEffects = {
     // Liberar memoria
     tempBuffer.remove();
     
-    // Aplicar el resultado al buffer de efectos
+    // Aplicar el resultado al buffer de efectos según el modo de fusión seleccionado
     this.effectsBuffer.clear();
+    
+    // Primero restauramos la imagen original
+    if (Config.semitonoModoFusion !== 'normal') {
+      this.effectsBuffer.image(originalBuffer, 0, 0);
+    }
+    
+    // Aplicar diferentes modos de fusión
+    switch (Config.semitonoModoFusion) {
+      case 'superposicion':
+        this.effectsBuffer.blendMode(OVERLAY);
+        break;
+      case 'multiplicar':
+        this.effectsBuffer.blendMode(MULTIPLY);
+        break;
+      case 'negativo':
+        this.effectsBuffer.blendMode(DIFFERENCE);
+        break;
+      default: // 'normal'
+        this.effectsBuffer.blendMode(BLEND);
+        break;
+    }
+    
+    // Dibujar el semitono con el modo de fusión seleccionado
     this.effectsBuffer.image(this._semitonoBuffer, 0, 0);
+    this.effectsBuffer.blendMode(BLEND); // Restaurar el modo normal
+    
+    // Liberar memoria
+    originalBuffer.remove();
   },
   
   // Aplicar aberración cromática mejorada con efecto radial
@@ -511,23 +561,27 @@ const VisualEffects = {
     
     // Orden optimizado para mejor resultado visual y rendimiento
     
-    // 1. Primero el pixelado (afecta la base de la imagen)
-    if (Config.pixeladoActivo && Config.pixeladoTamano > 1) {
+    // =============================================
+    // PRIMERA FASE: EFECTOS ANTES DEL DESENFOQUE
+    // =============================================
+    
+    // 1. Primero el pixelado (afecta la base de la imagen) - solo si no está configurado para aplicarse sobre el desenfoque
+    if (Config.pixeladoActivo && Config.pixeladoTamano > 1 && !Config.pixeladoSobreDesenfoque) {
       this.aplicarPixelado();
     }
     
-    // 2. Glitch (mejor aplicarlo temprano para que los demás efectos lo procesen)
-    if (Config.glitchActivo && Config.glitchIntensidad > 0) {
+    // 2. Glitch - solo si no está configurado para aplicarse sobre el desenfoque
+    if (Config.glitchActivo && Config.glitchIntensidad > 0 && !Config.glitchSobreDesenfoque) {
       this.aplicarGlitch();
     }
     
-    // 3. Semitono (incompatible con pixelado)
-    if (Config.semitonoActivo && Config.semitonoEscala > 0 && 
-        !(Config.pixeladoActivo && Config.pixeladoTamano > 1)) {
+    // 3. Semitono - solo si no está configurado para aplicarse sobre el desenfoque
+    if (Config.semitonoActivo && Config.semitonoEscala > 0 && !Config.semitonoSobreDesenfoque && 
+        !(Config.pixeladoActivo && Config.pixeladoTamano > 1 && !Config.pixeladoSobreDesenfoque)) {
       this.aplicarSemitono();
     }
     
-    // 4. Aberración cromática (antes del desenfoque para preservar definición)
+    // 4. Aberración cromática (siempre antes del desenfoque para preservar definición)
     if (Config.aberracionActiva && Config.aberracionIntensidad > 0) {
       this.aplicarAberracionCromatica();
     }
@@ -542,11 +596,30 @@ const VisualEffects = {
       this.aplicarBloom();
     }
     
+    // =============================================
+    // SEGUNDA FASE: EFECTOS SOBRE EL DESENFOQUE
+    // =============================================
+    
+    // 7. Pixelado sobre desenfoque
+    if (Config.pixeladoActivo && Config.pixeladoTamano > 1 && Config.pixeladoSobreDesenfoque) {
+      this.aplicarPixelado();
+    }
+    
+    // 8. Glitch sobre desenfoque
+    if (Config.glitchActivo && Config.glitchIntensidad > 0 && Config.glitchSobreDesenfoque) {
+      this.aplicarGlitch();
+    }
+    
+    // 9. Semitono sobre desenfoque
+    if (Config.semitonoActivo && Config.semitonoEscala > 0 && Config.semitonoSobreDesenfoque) {
+      this.aplicarSemitono();
+    }
+    
     // Dibujar el buffer de efectos procesado en el canvas principal
     blendMode(BLEND);
     image(this.effectsBuffer, 0, 0);
     
-    // 7. Ruido gráfico (último porque se aplica encima de todo)
+    // 10. Ruido gráfico (último porque se aplica encima de todo)
     if (Config.ruidoGrafico > 0) {
       this.aplicarRuidoGrafico();
     }
