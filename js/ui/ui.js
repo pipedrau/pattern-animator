@@ -1204,11 +1204,24 @@ const UI = {
   checkWelcomePopup() {
     console.log("Verificando si se debe mostrar el popup de bienvenida");
     const welcomePopup = document.getElementById('welcome-popup');
+    const popupClose = welcomePopup.querySelector('.popup-close');
+    
+    // Mostrar el botón de cierre desde el principio
+    if (popupClose) {
+      popupClose.style.display = 'flex';
+      
+      // Cerrar automáticamente después de 8 segundos si el usuario no lo ha cerrado
+      setTimeout(() => {
+        if (welcomePopup && !welcomePopup.classList.contains('hidden')) {
+          this.closeWelcomePopup();
+        }
+      }, 8000);
+    }
     
     // Siempre mostrar el popup al recargar la página
     if (welcomePopup) {
       console.log("Mostrando popup de bienvenida");
-      // El popup ya está visible por defecto
+      welcomePopup.classList.remove('hidden');
     }
   },
   
@@ -2055,11 +2068,19 @@ const UI = {
         imgContainer.class('imagen-personalizada-container');
         
         if (forma.esGif) {
-          // Para GIFs
+          // Para GIFs - crear una instancia visible del elemento
           if (forma.imgElement) {
-            // Clonar el elemento del GIF para la miniatura
+            // Clonar la vista del elemento para la galería
             let imgClone = createImg('', forma.nombre);
+            imgClone.class('imagen-personalizada-preview gif-preview');
+            
+            // Importante: usar el mismo src para mantener la animación
             imgClone.elt.src = forma.imgElement.elt.src;
+            
+            imgClone.parent(imgContainer);
+          } else if (forma.srcUrl) {
+            // Si solo tenemos la URL pero no el elemento (después de recargar)
+            let imgClone = createImg(forma.srcUrl, forma.nombre);
             imgClone.class('imagen-personalizada-preview gif-preview');
             imgClone.parent(imgContainer);
           } else {
@@ -2437,26 +2458,31 @@ const UI = {
     const blobURL = URL.createObjectURL(file.file || file);
     
     if (esGif) {
-      // Para GIFs, usamos createImg de p5.js que mantiene la animación
+      // IMPORTANTE: Para GIFs animados, debemos usar createImg
+      // Esta es la forma recomendada de manejar GIFs en p5.js
       const imgElement = createImg(blobURL, 'gifImage');
-      imgElement.hide(); // Ocultar el elemento pero mantenerlo activo
+      imgElement.hide(); // Ocultarlo pero mantenerlo activo para animación
       
-      // Cuando la imagen se carga
+      // Después de que la imagen se cargue completamente
       imgElement.elt.onload = () => {
-        // Crear la forma personalizada
+        console.log('GIF cargado, dimensiones:', imgElement.elt.width, 'x', imgElement.elt.height);
+        
+        // Crear nombre para la forma
         let nombre = fileName.split('.')[0].substring(0, 15);
         
-        // Guardar el GIF en la configuración
+        // Guardar el GIF en la configuración como objeto elemento p5.js
         let nuevaForma = {
           id: Date.now(),
           nombre: nombre,
           tipo: 'imagen',
           esGif: true,
-          imgElement: imgElement, // Elemento p5.js createImg
+          imgElement: imgElement, // El elemento HTML img creado por p5.js
+          srcUrl: blobURL,        // URL del blob para recrear si es necesario
           width: imgElement.elt.width || 100,
           height: imgElement.elt.height || 100
         };
         
+        // Añadir a las formas personalizadas
         Config.formasPersonalizadas.push(nuevaForma);
         this._actualizarLocalStorage();
         
@@ -2466,7 +2492,13 @@ const UI = {
         // Actualizar la galería
         this._actualizarGaleriaFormas();
         
-        console.log(`GIF importado: ${nombre}`);
+        console.log(`GIF importado: ${nombre} (listo para usar en el canvas)`);
+      };
+      
+      // Manejar errores
+      imgElement.elt.onerror = (err) => {
+        console.error('Error al cargar el GIF:', err);
+        alert('No se pudo cargar el GIF correctamente. Intenta con otra imagen.');
       };
     } else {
       // Para imágenes no GIF, usar loadImage de p5.js

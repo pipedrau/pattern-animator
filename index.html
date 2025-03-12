@@ -42,7 +42,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
   
   <!-- Fuente Cabinet Grotesk -->
-  <link href="https://api.fontshare.com/v2/css?f[]=cabinet-grotesk@500,700,400&display=swap" rel="stylesheet">
+  <link href="https://api.fontshare.com/v2/css?f[]=cabinet-grotesk@800,500,700,400&display=swap" rel="stylesheet">
   
   <!-- Iconos de Material Design -->
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
@@ -74,13 +74,34 @@
   <!-- Fondo modal para panel de controles en móviles -->
   <div id="modal-backdrop" class="modal-backdrop"></div>
 
-  <!-- Popup de bienvenida -->
+  <!-- Pantalla de carga y presentación -->
   <div id="welcome-popup">
-    <div class="popup-content">
+    <div class="container">
+      <div class="header">
+        <div class="logo">
+          <h1>Pattern<span>Animator</span></h1>
+        </div>
+        
+        <!-- Animación de carga con puntos cuadrados -->
+        <div class="loader">
+          <div class="loader-dot"></div>
+          <div class="loader-dot"></div>
+          <div class="loader-dot"></div>
+          <div class="loader-dot"></div>
+          <div class="loader-dot"></div>
+        </div>
+        
+        <!-- Ícono en la esquina superior derecha -->
+        <img src="https://res.cloudinary.com/ds9dcy2s2/image/upload/v1741748264/Portafolio-imgs/nplcnqpuiad7wzhfwntp.png" alt="Ícono" class="corner-icon">
+      </div>
+      
+      <div class="content">
+        <p>Create amazing<br>animations with<br><strong>customizable</strong> patterns</p>
+      </div>
+      
       <div class="popup-close" onclick="UI.closeWelcomePopup()">
         <span class="material-icons">close</span>
       </div>
-      <img src="img/preview.webp" alt="Pattern Animator Preview">
     </div>
   </div>
 
