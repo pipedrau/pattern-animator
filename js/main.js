@@ -64,21 +64,9 @@ function draw() {
     if (UI.grabacionEnProgreso && UI.grabacionFormato === 'mp4' && UI.mp4Encoder) {
       UI.procesarFrameMP4();
     }
-
+    
     // 6. Ajustar rendimiento para dispositivos móviles (cada 60 frames)
     frameCounter++;
-
-    if (frameCounter % 10 === 0 && UI && typeof UI.actualizarIndicadores === 'function') {
-      const particulasActivas = (ParticleSystem && ParticleSystem.particulas)
-        ? ParticleSystem.particulas.length
-        : 0;
-      UI.actualizarIndicadores({
-        fps: Math.round(frameRate()),
-        particulas: particulasActivas,
-        canvas: `${width} × ${height}`
-      });
-    }
-
     if (frameCounter % 60 === 0 && typeof DeviceDetector !== 'undefined') {
       DeviceDetector.ajustarRendimiento();
     }

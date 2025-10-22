@@ -4,7 +4,6 @@
  */
 const UI = {
   controlPanel: null,
-  colorPickers: [],
   addParticleOnClickEnabled: false, // Por defecto está deshabilitado
   grabacionDuracion: 5, // Duración de la grabación en segundos (por defecto 5s)
   grabacionFormato: 'webm', // Formato de grabación (por defecto WebM)
@@ -19,43 +18,14 @@ const UI = {
   mp4Frames: 0, // Contador de frames para MP4
   mp4FrameRate: 30, // Frame rate para la grabación MP4
   mp4TotalFrames: 0, // Total de frames a grabar
-  presetSelector: null,
-  presets: [],
-  _presetFeedback: null,
-  _presetFeedbackTimeout: null,
-  lastStatusUpdate: 0,
-  statusElements: null,
   
   crearControles() {
     console.log("Creando panel de control");
-
-    if (this.controlPanel) {
-      try {
-        this.controlPanel.remove();
-      } catch (error) {
-        console.warn('No se pudo eliminar el panel existente:', error);
-        const elementoPrevio = document.getElementById('controles');
-        if (elementoPrevio) elementoPrevio.remove();
-      }
-      this.controlPanel = null;
-    }
-
-    this.colorPickers = [];
-    this._presetFeedback = null;
-    this.statusElements = null;
-
-    if (typeof PresetManager !== 'undefined') {
-      const storedCompact = PresetManager.loadCompactMode();
-      if (storedCompact !== null) {
-        Config.compactMode = storedCompact;
-      }
-    }
-
+    
     this.controlPanel = createDiv();
     this.controlPanel.id('controles');
-
+    
     // Secciones plegables
-    this._crearSeccionPresets();
     this._crearSeccionBasica();
     this._crearSeccionPatrones();
     this._crearSeccionPaletaColores();
@@ -65,15 +35,9 @@ const UI = {
     this._crearSeccionRastro();
     this._crearSeccionEfectos();
     this._crearSeccionAcciones();
-
+    
     console.log("Panel de control creado");
-
-    document.body.classList.toggle('compact-controls', !!Config.compactMode);
-
-    if (!Config.controlVisible) {
-      this.controlPanel.style('display', 'none');
-    }
-
+    
     // Para dispositivos móviles, añadir botón de cierre
     if (typeof DeviceDetector !== 'undefined' && DeviceDetector.isMobile) {
       const closeButton = createDiv();
@@ -88,148 +52,11 @@ const UI = {
         this.toggleVisibilidad();
       });
     }
-
+    
     // Inicializar las secciones plegables después de crear el DOM
     this._inicializarSeccionesPlegables();
-    this._sincronizarIndicadores();
-    this._actualizarEstadoBotonesAccion();
   },
   
-  _crearSeccionPresets() {
-    if (typeof PresetManager === 'undefined') {
-      return;
-    }
-
-    let seccion = this._crearSeccionPlegable('Presets y Escenas');
-
-    let descripcion = createP('Guarda, reutiliza o mezcla configuraciones completas.');
-    descripcion.parent(seccion);
-    descripcion.addClass('preset-description');
-
-    this.presetSelector = createSelect();
-    this.presetSelector.parent(seccion);
-    this.presetSelector.option('Selecciona un preset', '');
-    this._llenarSelectorPresets();
-
-    let aplicarBtn = createButton('Aplicar preset seleccionado');
-    aplicarBtn.parent(seccion);
-    aplicarBtn.mousePressed(() => {
-      const id = this.presetSelector ? this.presetSelector.value() : '';
-      if (!id) {
-        this._mostrarFeedbackPreset('Selecciona un preset para aplicarlo.');
-        return;
-      }
-      this._aplicarPresetDesdeUI(id);
-    });
-
-    let guardarBtn = createButton('Guardar preset actual');
-    guardarBtn.parent(seccion);
-    guardarBtn.mousePressed(() => {
-      const nombre = prompt('Nombre para el nuevo preset:');
-      if (!nombre) {
-        this._mostrarFeedbackPreset('Se canceló el guardado del preset.');
-        return;
-      }
-      const preset = PresetManager.guardar(nombre);
-      if (preset) {
-        this._llenarSelectorPresets(preset.id);
-        this._mostrarFeedbackPreset('Preset guardado correctamente.');
-      } else {
-        this._mostrarFeedbackPreset('No se pudo guardar el preset.');
-      }
-    });
-
-    let eliminarBtn = createButton('Eliminar preset seleccionado');
-    eliminarBtn.parent(seccion);
-    eliminarBtn.mousePressed(() => {
-      const id = this.presetSelector ? this.presetSelector.value() : '';
-      if (!id) {
-        this._mostrarFeedbackPreset('Selecciona un preset para eliminarlo.');
-        return;
-      }
-      const preset = this.presets.find(item => item.id === id);
-      if (!preset || preset.source !== 'custom') {
-        this._mostrarFeedbackPreset('Solo puedes eliminar tus presets guardados.');
-        return;
-      }
-      if (confirm(`¿Eliminar el preset "${preset.name}"?`)) {
-        PresetManager.eliminar(id);
-        this._llenarSelectorPresets();
-        this._mostrarFeedbackPreset('Preset eliminado.');
-      }
-    });
-
-    let randomBtn = createButton('Randomizar todos los parámetros');
-    randomBtn.parent(seccion);
-    randomBtn.mousePressed(() => {
-      PresetManager.randomizeAll();
-      this.recargarSistema();
-      this._mostrarFeedbackPreset('Parámetros aleatorios aplicados.');
-    });
-
-    let indicadoresToggle = createCheckbox(' Mostrar indicadores de estado', Config.mostrarInfo);
-    indicadoresToggle.parent(seccion);
-    indicadoresToggle.changed(() => {
-      Config.mostrarInfo = indicadoresToggle.checked();
-      this._sincronizarIndicadores();
-      this._mostrarFeedbackPreset(Config.mostrarInfo ? 'Indicadores visibles.' : 'Indicadores ocultos.');
-    });
-
-    this._presetFeedback = createP('');
-    this._presetFeedback.parent(seccion);
-    this._presetFeedback.addClass('preset-feedback');
-  },
-
-  _llenarSelectorPresets(preseleccion = '') {
-    if (!this.presetSelector || typeof PresetManager === 'undefined') return;
-
-    this.presetSelector.elt.innerHTML = '';
-    this.presetSelector.option('Selecciona un preset', '');
-
-    this.presets = PresetManager.listar();
-    this.presets.forEach(preset => {
-      const prefix = preset.source === 'default' ? '⭐' : '💾';
-      this.presetSelector.option(`${prefix} ${preset.name}`, preset.id);
-    });
-
-    if (preseleccion) {
-      try {
-        this.presetSelector.selected(preseleccion);
-      } catch (error) {
-        console.warn('No se pudo preseleccionar el preset', error);
-      }
-    }
-  },
-
-  _mostrarFeedbackPreset(mensaje) {
-    if (!this._presetFeedback) return;
-
-    this._presetFeedback.html(mensaje || '');
-    this._presetFeedback.addClass('visible');
-
-    if (this._presetFeedbackTimeout) {
-      clearTimeout(this._presetFeedbackTimeout);
-    }
-
-    this._presetFeedbackTimeout = setTimeout(() => {
-      if (this._presetFeedback) {
-        this._presetFeedback.removeClass('visible');
-        this._presetFeedback.html('');
-      }
-    }, 2400);
-  },
-
-  _aplicarPresetDesdeUI(id) {
-    if (typeof PresetManager === 'undefined') return;
-    const preset = PresetManager.aplicar(id);
-    if (!preset) {
-      this._mostrarFeedbackPreset('No se pudo cargar el preset.');
-      return;
-    }
-    this.recargarSistema();
-    this._mostrarFeedbackPreset(`Preset "${preset.name}" aplicado.`);
-  },
-
   // Modificar la sección básica para hacerla plegable
   _crearSeccionBasica() {
     // Crear la sección plegable usando el método existente
@@ -1260,7 +1087,7 @@ const UI = {
   // Función para actualizar los controles de color con los valores actuales
   _actualizarControlesColor() {
     if (!this.colorPickers) return;
-
+    
     // Asegurar que la paleta tenga colores antes de actualizar
     if (Config.paletaColores.length === 0) {
       ColorUtils.inicializarPaleta();
@@ -1279,132 +1106,7 @@ const UI = {
       }
     }
   },
-
-  _sincronizarIndicadores() {
-    const body = document.body;
-    if (!body) return;
-    if (!Config.mostrarInfo) {
-      body.classList.add('ocultar-indicadores');
-    } else {
-      body.classList.remove('ocultar-indicadores');
-    }
-
-    if (!this.statusElements) {
-      this.statusElements = {
-        bar: document.getElementById('status-bar'),
-        fps: document.getElementById('status-fps'),
-        particles: document.getElementById('status-particles'),
-        canvas: document.getElementById('status-canvas')
-      };
-    }
-
-    if (this.statusElements && this.statusElements.bar) {
-      if (!Config.mostrarInfo) {
-        this.statusElements.bar.classList.add('hidden');
-      } else {
-        this.statusElements.bar.classList.remove('hidden');
-      }
-    }
-  },
-
-  _actualizarEstadoBotonesAccion() {
-    const menuButton = document.querySelector('.action-button[title*="Controles"]');
-    if (menuButton) {
-      menuButton.classList.toggle('active', !!Config.controlVisible);
-    }
-
-    const compactButton = document.querySelector('.action-button[data-action="compact"]');
-    if (compactButton) {
-      compactButton.classList.toggle('active', !!Config.compactMode);
-    }
-  },
-
-  toggleModoCompacto() {
-    Config.compactMode = !Config.compactMode;
-    document.body.classList.toggle('compact-controls', Config.compactMode);
-    if (typeof PresetManager !== 'undefined') {
-      PresetManager.persistCompactMode(Config.compactMode);
-    }
-    this._actualizarEstadoBotonesAccion();
-  },
-
-  recargarSistema() {
-    const presetSeleccionado = this.presetSelector ? this.presetSelector.value() : '';
-
-    if (typeof FlowField !== 'undefined' && typeof VisualEffects !== 'undefined') {
-      if (typeof width !== 'undefined' && typeof height !== 'undefined' &&
-          (Config.canvasWidth !== width || Config.canvasHeight !== height)) {
-        cambiarTamanoCanvas(Config.canvasWidth, Config.canvasHeight);
-      } else {
-        VisualEffects.inicializar(width, height);
-        let dimensiones = FlowField.inicializar(width, height, Config.escala);
-        cols = dimensiones.cols;
-        rows = dimensiones.rows;
-      }
-    }
-
-    if (typeof VisualEffects !== 'undefined') {
-      VisualEffects.reiniciar();
-    }
-
-    if (typeof ParticleSystem !== 'undefined') {
-      ParticleSystem.inicializar();
-    }
-
-    if (typeof background === 'function') {
-      background(Config.colorFondo);
-    }
-
-    this.crearControles();
-
-    if (presetSeleccionado && this.presetSelector) {
-      try {
-        this.presetSelector.selected(presetSeleccionado);
-      } catch (error) {
-        console.warn('No se pudo restaurar la selección del preset', error);
-      }
-    }
-  },
-
-  actualizarIndicadores(datos) {
-    if (!datos) return;
-    if (!this.statusElements) {
-      this.statusElements = {
-        bar: document.getElementById('status-bar'),
-        fps: document.getElementById('status-fps'),
-        particles: document.getElementById('status-particles'),
-        canvas: document.getElementById('status-canvas')
-      };
-    }
-
-    if (!this.statusElements.bar) return;
-
-    if (!Config.mostrarInfo) {
-      this.statusElements.bar.classList.add('hidden');
-      return;
-    }
-
-    this.statusElements.bar.classList.remove('hidden');
-
-    const ahora = Date.now();
-    if (ahora - this.lastStatusUpdate < 150) {
-      return;
-    }
-    this.lastStatusUpdate = ahora;
-
-    if (typeof datos.fps !== 'undefined' && this.statusElements.fps) {
-      this.statusElements.fps.textContent = datos.fps;
-    }
-
-    if (typeof datos.particulas !== 'undefined' && this.statusElements.particles) {
-      this.statusElements.particles.textContent = datos.particulas;
-    }
-
-    if (datos.canvas && this.statusElements.canvas) {
-      this.statusElements.canvas.textContent = datos.canvas;
-    }
-  },
-
+  
   toggleVisibilidad() {
     Config.controlVisible = !Config.controlVisible;
     let controles = select('#controles');
@@ -1445,8 +1147,16 @@ const UI = {
         controles.style('display', Config.controlVisible ? 'block' : 'none');
       }
     }
-
-    this._actualizarEstadoBotonesAccion();
+    
+    // Actualizar botón de menú
+    const menuButton = document.querySelector('.action-button[title*="Controles"]');
+    if (menuButton) {
+      if (Config.controlVisible) {
+        menuButton.classList.add('active');
+      } else {
+        menuButton.classList.remove('active');
+      }
+    }
   },
   
   // Función para alternar la visibilidad del popup de ayuda
