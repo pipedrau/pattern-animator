@@ -33,6 +33,45 @@ canvas {
   scrollbar-color: rgba(61, 61, 82, 0.5) rgba(30, 39, 46, 0.2);
 }
 
+body.compact-controls #controles {
+  width: 220px;
+  padding: 12px;
+}
+
+body.compact-controls #controles .collapsible-header {
+  padding: 8px 12px;
+}
+
+body.compact-controls #controles .collapsible-content {
+  padding: 12px;
+}
+
+body.compact-controls #controles input,
+body.compact-controls #controles select,
+body.compact-controls #controles button {
+  font-size: 13px;
+  padding: 6px 10px;
+}
+
+.preset-description {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.7);
+  margin-bottom: 10px;
+}
+
+.preset-feedback {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.75);
+  min-height: 18px;
+  margin-top: 8px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.preset-feedback.visible {
+  opacity: 1;
+}
+
 #controles::-webkit-scrollbar {
   width: 8px;
 }
@@ -253,6 +292,12 @@ input[type="range"]::-webkit-slider-thumb {
   position: relative; /* Importante para aumentar zona táctil */
 }
 
+.action-button.active {
+  background-color: #5e72e4;
+  color: #ffffff;
+  box-shadow: 0 6px 12px rgba(94, 114, 228, 0.4);
+}
+
 /* Aumentar zona táctil para dispositivos táctiles */
 .touch-device .action-button::before {
   content: '';
@@ -310,6 +355,55 @@ input[type="range"]::-webkit-slider-thumb {
   z-index: 201;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
   transition: all 0.2s ease;
+}
+
+.status-bar {
+  position: fixed;
+  bottom: 20px;
+  right: 80px;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 12px 18px;
+  background: rgba(30, 39, 46, 0.78);
+  border-radius: 14px;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(18px);
+  z-index: 85;
+  font-size: 13px;
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+.status-bar.hidden {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(10px);
+}
+
+.status-item {
+  display: flex;
+  flex-direction: column;
+  min-width: 90px;
+}
+
+.status-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: rgba(255, 255, 255, 0.6);
+  margin-bottom: 4px;
+}
+
+.status-value {
+  font-size: 15px;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+body.ocultar-indicadores .status-bar {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(10px);
 }
 
 /* Selector de colores personalizado */

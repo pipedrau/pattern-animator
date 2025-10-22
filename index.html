@@ -136,6 +136,9 @@
     <div class="action-button" onclick="UI.toggleVisibilidad()" title="Mostrar/Ocultar Controles">
       <span class="material-icons">menu</span>
     </div>
+    <div class="action-button" data-action="compact" onclick="UI.toggleModoCompacto()" title="Modo compacto del panel">
+      <span class="material-icons">view_sidebar</span>
+    </div>
     <div class="action-button" onclick="UI.toggleFullscreen()" title="Pantalla Completa">
       <span class="material-icons">fullscreen</span>
     </div>
@@ -186,12 +189,29 @@
     <div class="grabacion-circulo"></div>
     <span id="grabacion-tiempo">Grabando: 0s</span>
   </div>
-  
+
+  <!-- Barra de estado -->
+  <div id="status-bar" class="status-bar">
+    <div class="status-item">
+      <span class="status-label">FPS</span>
+      <span class="status-value" id="status-fps">0</span>
+    </div>
+    <div class="status-item">
+      <span class="status-label">Partículas</span>
+      <span class="status-value" id="status-particles">0</span>
+    </div>
+    <div class="status-item">
+      <span class="status-label">Lienzo</span>
+      <span class="status-value" id="status-canvas">0 × 0</span>
+    </div>
+  </div>
+
   <!-- Scripts -->
   <script src="js/config.js"></script>
   <script src="js/utils/color-utils.js"></script>
   <script src="js/utils/shape-utils.js"></script>
   <script src="js/utils/device-detector.js"></script>
+  <script src="js/utils/preset-manager.js"></script>
   <script src="js/core/flow-field.js"></script>
   <script src="js/core/particula.js"></script>
   <script src="js/core/particle-system.js"></script>

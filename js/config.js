@@ -133,8 +133,9 @@ const Config = {
   glitchSobreDesenfoque: false, // Determina si se aplica por encima del desenfoque
   
   // Interfaz
-  mostrarInfo: false,
+  mostrarInfo: true,
   controlVisible: true,
+  compactMode: false,
   
   // Configuración de efectos visuales avanzados
   gradienteFondo: false,
